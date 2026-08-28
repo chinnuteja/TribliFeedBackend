@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>TRIBLI — Feed</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Familjen+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0B0A09;--surface:#141210;--surface2:#1C1917;--line:#2A2622;--line2:#3A342E;
+--ink:#F5F0E8;--ink2:#A8A096;--ink3:#6E665D;--amber:#E8873A;--amberdim:#7A4A1E;
+--green:#5FA463;--blue:#5B8AAE;--red:#C4553F;--purple:#9C7BB5;}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{background:#08302E;}
+body{font-family:'Familjen Grotesk',system-ui,sans-serif;color:var(--ink);display:flex;
+justify-content:center;min-height:100vh;
+background:radial-gradient(900px 500px at 20% -10%,#0d4f4a 0%,transparent 60%),
+radial-gradient(700px 600px at 100% 100%,#0a3b38 0%,transparent 55%),#08302E;}
+.shell{width:100%;max-width:430px;background:var(--bg);min-height:100vh;position:relative;
+overflow:hidden;box-shadow:0 40px 120px rgba(0,0,0,.6);display:flex;flex-direction:column;}
+@media(min-width:900px){body{padding:28px 0;align-items:flex-start;}
+.shell{border-radius:34px;min-height:calc(100vh - 56px);max-height:940px;border:1px solid #2a2622;}}
+.grain{position:absolute;inset:0;pointer-events:none;z-index:60;opacity:.15;mix-blend-mode:overlay;
+background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E");}
+header{padding:15px 18px 0;background:var(--bg);z-index:20;flex:none;}
+.brandrow{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px;}
+.brand{font-family:'Instrument Serif',serif;font-size:27px;line-height:1;}
+.brand span{color:var(--amber);}
+.livebadge{display:flex;align-items:center;gap:6px;font-family:'JetBrains Mono',monospace;
+font-size:8px;letter-spacing:.13em;text-transform:uppercase;color:var(--green);
+border:1px solid #2a4a2e;background:#131c14;padding:4px 8px;border-radius:20px;}
+.pulse{width:5px;height:5px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);
+border:1px solid var(--line);border-radius:12px;overflow:hidden;}
+.metric{background:var(--surface);padding:10px 6px;text-align:center;cursor:pointer;}
+.metric:active{background:var(--surface2);}
+.metric .n{font-family:'Instrument Serif',serif;font-size:22px;line-height:1;}
+.metric .n.a{color:var(--amber);}.metric .n.g{color:var(--green);}.metric .n.d{color:var(--ink3);}
+.metric .l{font-family:'JetBrains Mono',monospace;font-size:7px;letter-spacing:.07em;
+text-transform:uppercase;color:var(--ink3);margin-top:5px;line-height:1.3;}
+.hint{font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--ink3);text-align:center;padding:6px 0 9px;}
+.hint b{color:var(--amber);font-weight:400;}
+.rail{display:flex;gap:7px;overflow-x:auto;padding:2px 18px 12px;scrollbar-width:none;background:var(--bg);flex:none;}
+.rail::-webkit-scrollbar{display:none;}
+.chip{flex:none;display:flex;align-items:center;gap:6px;padding:8px 13px;border-radius:30px;
+border:1px solid var(--line2);background:var(--surface);color:var(--ink2);font-size:12.5px;
+font-weight:600;white-space:nowrap;cursor:pointer;transition:all .2s;}
+.chip .ic{font-size:9px;opacity:.75;}
+.chip .ct{font-family:'JetBrains Mono',monospace;font-size:9px;opacity:.6;}
+.chip.off{opacity:.5;border-style:dashed;}
+.chip.on{background:var(--amber);border-color:var(--amber);color:#150E07;}
+.cathead{padding:13px 18px 11px;border-top:1px solid var(--line);background:var(--surface);
+display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex:none;}
+.cathead h2{font-family:'Instrument Serif',serif;font-size:21px;font-weight:400;line-height:1.05;}
+.cathead p{font-size:11.5px;color:var(--ink2);line-height:1.45;margin-top:5px;}
+.infobtn{flex:none;width:27px;height:27px;border-radius:50%;border:1px solid var(--line2);
+background:transparent;color:var(--ink2);font-family:'Instrument Serif',serif;font-size:14px;
+font-style:italic;cursor:pointer;display:grid;place-items:center;}
+.infobtn:active{background:var(--amber);color:#150E07;border-color:var(--amber);}
+.feed{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+.card{padding:15px 18px;border-bottom:1px solid var(--line);animation:rise .4s cubic-bezier(.2,.7,.3,1) backwards;}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.card:active{background:var(--surface);}
+.meta{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:8px;}
+.src{font-family:'JetBrains Mono',monospace;font-size:8.5px;letter-spacing:.09em;
+text-transform:uppercase;color:var(--amber);}
+.dot{width:2px;height:2px;border-radius:50%;background:var(--ink3);}
+.date{font-family:'JetBrains Mono',monospace;font-size:8.5px;color:var(--ink3);}
+.card h3{font-size:15px;font-weight:600;line-height:1.32;margin-bottom:6px;}
+.card p{font-size:12.5px;color:var(--ink2);line-height:1.5;}
+.readlink{display:inline-flex;gap:5px;margin-top:10px;font-family:'JetBrains Mono',monospace;
+font-size:9px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink3);
+text-decoration:none;border-bottom:1px solid var(--line2);padding-bottom:2px;}
+.readlink:active{color:var(--amber);border-color:var(--amber);}
+.op{border-left:2px solid var(--amberdim);}
+.fest{border-left:2px solid #3E5A72;}
+.fest .src{color:var(--blue);}
+.row{display:flex;gap:6px;flex-wrap:wrap;margin:9px 0 2px;}
+.tag{font-family:'JetBrains Mono',monospace;font-size:8.5px;padding:3.5px 7px;border-radius:4px;
+background:var(--surface2);color:var(--ink2);border:1px solid var(--line);}
+.tag.loc{color:var(--blue);border-color:#2A3A46;}
+.tag.dl{color:var(--amber);border-color:var(--amberdim);}
+.tag.urgent{color:#E8956A;border-color:#6E3320;background:#25140E;}
+.tag.fee{color:var(--green);border-color:#254028;}
+.trust{display:inline-flex;align-items:center;gap:5px;margin-top:10px;
+font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:.06em;
+text-transform:uppercase;color:var(--ink3);}
+.trust b{color:var(--ink2);font-weight:500;}
+.tdot{width:5px;height:5px;border-radius:50%;background:var(--blue);}
+.tdot.caution{background:var(--amber);}
+.more{margin:16px 18px 26px;padding:13px;border-radius:10px;border:1px solid var(--line2);
+background:var(--surface);color:var(--ink2);font-family:'JetBrains Mono',monospace;font-size:10px;
+letter-spacing:.12em;text-transform:uppercase;cursor:pointer;width:calc(100% - 36px);}
+.more:active{background:var(--amber);color:#150E07;border-color:var(--amber);}
+.endnote{font-size:11px;color:var(--ink3);line-height:1.5;padding:14px 18px 28px;
+text-align:center;border-top:1px solid var(--line);}
+.endnote b{color:var(--ink2);}
+.empty{padding:32px 22px;text-align:center;}
+.empty .ic{font-size:30px;color:var(--line2);margin-bottom:12px;}
+.empty h3{font-family:'Instrument Serif',serif;font-size:19px;font-weight:400;margin-bottom:9px;}
+.empty p{font-size:12.5px;color:var(--ink2);line-height:1.55;max-width:290px;margin:0 auto 16px;}
+.skel{padding:15px 18px;border-bottom:1px solid var(--line);}
+.skel div{height:11px;background:linear-gradient(90deg,var(--surface) 25%,var(--surface2) 50%,var(--surface) 75%);
+background-size:200% 100%;animation:sh 1.2s infinite;border-radius:4px;margin-bottom:8px;}
+@keyframes sh{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.scrim{position:absolute;inset:0;background:rgba(4,3,2,.88);backdrop-filter:blur(7px);z-index:70;
+display:none;align-items:flex-end;}
+.scrim.open{display:flex;}
+.sheet{width:100%;background:var(--surface);border-top:1px solid var(--line2);
+border-radius:20px 20px 0 0;padding:9px 0 0;max-height:88%;display:flex;flex-direction:column;
+animation:slide .3s cubic-bezier(.2,.8,.3,1);}
+@keyframes slide{from{transform:translateY(100%)}to{transform:none}}
+.grip{width:34px;height:3px;border-radius:3px;background:var(--line2);margin:0 auto 14px;flex:none;}
+.sheetbody{overflow-y:auto;padding:0 20px 24px;}
+.sheet h3{font-family:'Instrument Serif',serif;font-size:22px;font-weight:400;margin-bottom:4px;}
+.sheet .sub{font-family:'JetBrains Mono',monospace;font-size:8.5px;letter-spacing:.1em;
+text-transform:uppercase;color:var(--amber);margin-bottom:15px;}
+.block{margin-bottom:17px;}
+.block .lb{font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:.11em;
+text-transform:uppercase;color:var(--ink3);margin-bottom:8px;}
+.block p{font-size:12.5px;color:var(--ink2);line-height:1.55;}
+.summary3{background:var(--surface2);border:1px solid var(--line);border-radius:10px;
+padding:12px 13px;margin-bottom:15px;}
+.summary3 p{font-size:11.5px;color:var(--ink2);line-height:1.5;margin-bottom:7px;}
+.summary3 p:last-child{margin-bottom:0;}
+.summary3 b{color:var(--ink);font-weight:600;}
+.kpi{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:15px;}
+.kpi>div{background:var(--surface2);border:1px solid var(--line);border-radius:9px;
+padding:10px 7px;text-align:center;}
+.kpi .v{font-family:'Instrument Serif',serif;font-size:19px;line-height:1;}
+.kpi .k{font-family:'JetBrains Mono',monospace;font-size:7px;letter-spacing:.07em;
+text-transform:uppercase;color:var(--ink3);margin-top:4px;}
+.statbar{display:flex;height:7px;border-radius:4px;overflow:hidden;margin:4px 0 9px;background:var(--surface2);}
+.legend{display:flex;gap:11px;flex-wrap:wrap;font-family:'JetBrains Mono',monospace;font-size:8px;
+letter-spacing:.05em;text-transform:uppercase;color:var(--ink3);}
+.legend span{display:inline-flex;align-items:center;gap:4px;}
+.lg{width:6px;height:6px;border-radius:2px;display:inline-block;}
+.srow{padding:12px 0;border-bottom:1px solid var(--line);}
+.srow:last-child{border-bottom:none;}
+.sname{font-size:13.5px;font-weight:600;display:flex;align-items:center;gap:7px;margin-bottom:7px;}
+.sdot{width:7px;height:7px;border-radius:50%;flex:none;}
+.sbadges{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px;}
+.sb{font-family:'JetBrains Mono',monospace;font-size:8px;padding:3px 6px;border-radius:4px;
+border:1px solid var(--line2);background:var(--surface2);white-space:nowrap;}
+.snote{font-size:11.5px;color:var(--ink2);line-height:1.48;}
+.whybox{background:#1E1611;border:1px solid #3A2C1C;border-left:2.5px solid var(--amber);
+border-radius:0 8px 8px 0;padding:9px 11px;}
+.whybox b{display:block;font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:.1em;
+color:var(--amber);margin-bottom:4px;}
+.whybox p{font-size:11.5px;color:var(--ink2);line-height:1.5;}
+.catgroup{margin-bottom:20px;}
+.catgroup h4{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.13em;
+text-transform:uppercase;color:var(--amber);padding-bottom:7px;border-bottom:1px solid var(--line2);
+margin-bottom:3px;display:flex;justify-content:space-between;align-items:baseline;}
+.catgroup h4 em{font-style:normal;color:var(--ink3);font-size:8.5px;}
+.closebar{flex:none;padding:11px 20px 20px;border-top:1px solid var(--line);background:var(--surface);}
+.closebtn{width:100%;padding:12px;border-radius:9px;border:1px solid var(--line2);
+background:transparent;color:var(--ink2);font-family:'JetBrains Mono',monospace;font-size:10px;
+letter-spacing:.13em;text-transform:uppercase;cursor:pointer;}
+.closebtn:active{background:var(--amber);color:#150E07;border-color:var(--amber);}
+.err{margin:20px 18px;padding:14px;border:1px solid #4A2620;background:#1E1210;border-radius:10px;}
+.err b{color:var(--red);font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.1em;
+display:block;margin-bottom:6px;}
+.err p{font-size:12px;color:var(--ink2);line-height:1.5;}
+</style>
+</head>
+<body>
+<div class="shell"><div class="grain"></div>
+<header>
+  <div class="brandrow">
+    <div class="brand">TRIB<span>L</span>I</div>
+    <div class="livebadge"><span class="pulse"></span><span id="livetxt">Live API</span></div>
+  </div>
+  <div class="metrics">
+    <div class="metric" data-m="sources"><div class="n" id="m1">–</div><div class="l">Sources<br>Mapped</div></div>
+    <div class="metric" data-m="live"><div class="n g" id="m2">–</div><div class="l">Feeding<br>Now</div></div>
+    <div class="metric" data-m="items"><div class="n a" id="m3">–</div><div class="l">Live<br>Items</div></div>
+    <div class="metric" data-m="cost"><div class="n d" id="m4">$0</div><div class="l">Spend<br>To Date</div></div>
+  </div>
+  <div class="hint">Tap any number — <b>full source intelligence</b></div>
+</header>
+<div class="rail" id="rail"></div>
+<div class="cathead" id="cathead"></div>
+<div class="feed" id="feed"></div>
+</div>
+<div class="scrim" id="scrim"><div class="sheet"><div class="grip"></div>
+<div class="sheetbody" id="sheetbody"></div>
+<div class="closebar"><button class="closebtn" onclick="closeSheet()">Close</button></div>
+</div></div>
+
+<script>
+const API = location.origin;
+const PAGE = 30;
+const el = s => document.querySelector(s);
+const esc = s => (s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+const CATCOPY = {
+  all:{why:"A blended view across every live category, with sources interleaved so no single outlet dominates."},
+  casting:{why:"Open crew calls, auditions and paid roles. The highest-value category and the reason most people open the app."},
+  telugu:{why:"Tollywood-first, not Tollywood-only. A Telugu actor takes a Tamil or Malayalam role if it's good."},
+  festivals:{why:"Festival calls-for-entry with live deadlines and entry fees — only windows that are still open."},
+  tech:{why:"Cameras, lenses, editing, colour, VFX and virtual production. Global by design."},
+  ai:{why:"The fastest-moving area affecting working filmmakers. Separated because it changes weekly."},
+  trade:{why:"Production and commissioning signal — the news that predicts hiring. Filtered against box office and gossip."},
+  education:{why:"Workshops, admissions, masterclasses and training."},
+  grants:{why:"Funding, labs, fellowships and residencies."},
+  unions:{why:"Wage revisions, strikes, rate cards and union notices."},
+  aggregator:{why:"Directories and meta-sources used to discover new feeds."},
+};
+const STATUS={
+ ok:{c:"var(--green)",l:"Feeding now",d:"Pulling live data into the feed right now."},
+ empty:{c:"var(--blue)",l:"No new items",d:"Reachable and healthy, but the feed returned nothing this run."},
+ blocked:{c:"var(--red)",l:"Blocked",d:"Refuses automated access, or is paywalled."},
+ error:{c:"var(--red)",l:"Error",d:"Failed on the last run."},
+ nofeed:{c:"var(--ink3)",l:"No feed",d:"Checked — no API or RSS exists. Needs a human."},
+ untested:{c:"var(--purple)",l:"Untested",d:"Not probed yet. Status genuinely unknown."},
+ rejected:{c:"var(--ink3)",l:"Rejected",d:"Works, but the content fails our editorial policy."},
+ pending:{c:"var(--ink3)",l:"Pending",d:"Configured but not yet run."},
+};
+
+let cats=[], active="all", items=[], total=0, offset=0, srcData=null, loading=false;
+
+async function api(path){
+  const r = await fetch(API+path);
+  if(!r.ok) throw new Error("API "+r.status);
+  return r.json();
+}
+function ago(d){if(!d)return"";const t=new Date(d);if(isNaN(t))return"";
+ const n=Math.floor((Date.now()-t)/864e5);
+ return n<=0?"today":n===1?"1d ago":n<30?n+"d ago":Math.floor(n/30)+"mo ago";}
+function dlTag(d){if(!d)return"";const t=new Date(d);if(isNaN(t))return"";
+ const n=Math.ceil((t-Date.now())/864e5);
+ if(n<0)return'<span class="tag">closed</span>';
+ if(n===0)return'<span class="tag urgent">closes today</span>';
+ if(n<=7)return`<span class="tag urgent">${n} day${n>1?"s":""} left</span>`;
+ if(n<400)return`<span class="tag dl">${n} days left</span>`;return"";}
+
+async function boot(){
+  try{
+    const [c,h,s] = await Promise.all([
+      api("/api/categories"), api("/api/health"), api("/api/sources")]);
+    cats = c.categories; srcData = s;
+    el("#m1").textContent = s.totals.mapped;
+    el("#m2").textContent = s.totals.feeding;
+    el("#m3").textContent = h.items.active;
+    el("#livetxt").textContent = "Live API";
+    renderRail(); renderHead(); loadFeed(true);
+  }catch(e){
+    el("#feed").innerHTML = `<div class="err"><b>Cannot reach the API</b>
+      <p>The backend isn't responding at <code>${esc(API)}</code>.
+      Start it with <code>python run.py</code>, then reload.</p></div>`;
+    el("#livetxt").textContent = "Offline";
+    document.querySelector(".pulse").style.background="var(--red)";
+  }
+}
+
+function renderRail(){
+  const all = [{id:"all",label:"For You",icon:"◆",count:null}].concat(cats);
+  el("#rail").innerHTML = all.map(c=>{
+    const dead = c.id!=="all" && c.count===0;
+    return `<div class="chip ${c.id===active?"on":""} ${dead?"off":""}" data-c="${c.id}">
+      <span class="ic">${c.icon||"◆"}</span>${esc(c.label)}${
+      c.count!==null&&c.count!==undefined?`<span class="ct">${c.count}</span>`:""}</div>`;
+  }).join("");
+  el("#rail").querySelectorAll(".chip").forEach(ch=>ch.onclick=()=>{
+    active=ch.dataset.c; offset=0; renderRail(); renderHead(); loadFeed(true);
+    el("#feed").scrollTop=0;});
+  const on=el("#rail").querySelector(".chip.on");
+  if(on) on.scrollIntoView({behavior:"smooth",block:"nearest",inline:"center"});
+}
+
+function catObj(){ return cats.find(c=>c.id===active) || {id:"all",label:"For You",icon:"◆"}; }
+
+function renderHead(){
+  const c=catObj(), copy=CATCOPY[active]||{why:""};
+  el("#cathead").innerHTML=`<div><h2>${esc(c.label||"For You")}</h2>
+    <p>${esc(copy.why)}</p></div><button class="infobtn" id="ib">i</button>`;
+  el("#ib").onclick=()=>catSheet();
+}
+
+async function loadFeed(reset){
+  if(loading) return; loading=true;
+  if(reset){ offset=0; items=[];
+    el("#feed").innerHTML = Array(4).fill(
+      '<div class="skel"><div style="width:35%"></div><div style="width:88%"></div><div style="width:70%"></div></div>').join("");
+  }
+  try{
+    const d = await api(`/api/feed?category=${encodeURIComponent(active)}&limit=${PAGE}&offset=${offset}`);
+    total = d.total; items = reset ? d.items : items.concat(d.items);
+    renderFeed();
+  }catch(e){
+    el("#feed").innerHTML = `<div class="err"><b>Failed to load</b><p>${esc(e.message)}</p></div>`;
+  }
+  loading=false;
+}
+
+function cardHTML(it,i){
+  const delay=`style="animation-delay:${Math.min(i%PAGE,14)*20}ms"`;
+  const kind = it.kind;
+  if(kind==="opportunity"){
+    const caution = it.trust==="caution";
+    return `<div class="card op" ${delay}>
+      <div class="meta"><span class="src">${esc(it.source)}</span><span class="dot"></span>
+        <span class="date">${ago(it.posted_at)}</span></div>
+      <h3>${esc(it.title)}</h3>${it.description?`<p>${esc(it.description)}</p>`:""}
+      <div class="row">${it.location?`<span class="tag loc">${esc(it.location)}</span>`:""}
+        ${it.org?`<span class="tag">${esc(it.org)}</span>`:""}
+        ${it.employment_type?`<span class="tag">${esc(it.employment_type)}</span>`:""}
+        ${dlTag(it.deadline)}</div>
+      <div class="trust"><span class="tdot ${caution?"caution":""}"></span>${
+        caution?"Flagged &middot; <b>review before applying</b>":"External listing &middot; <b>not yet TRIBLI-verified</b>"}</div><br>
+      <a class="readlink" href="${esc(it.link)}" target="_blank" rel="noopener">Open source ↗</a></div>`;
+  }
+  if(kind==="festival"){
+    return `<div class="card fest" ${delay}>
+      <div class="meta"><span class="src">${esc(it.source)}</span><span class="dot"></span>
+        <span class="date">${it.region_tier==="india"?"India":"International"}</span></div>
+      <h3>${esc(it.title)}</h3>${it.description?`<p>${esc(it.description)}</p>`:""}
+      <div class="row">${it.location?`<span class="tag loc">${esc(it.location)}</span>`:""}
+        ${it.fee?`<span class="tag fee">${esc(it.fee)}</span>`:""}${dlTag(it.deadline)}</div>
+      <a class="readlink" href="${esc(it.link)}" target="_blank" rel="noopener">Submission page ↗</a></div>`;
+  }
+  return `<div class="card" ${delay}>
+    <div class="meta"><span class="src">${esc(it.source)}</span><span class="dot"></span>
+      <span class="date">${ago(it.posted_at)}</span></div>
+    <h3>${esc(it.title)}</h3>${it.description?`<p>${esc(it.description)}</p>`:""}
+    <a class="readlink" href="${esc(it.link)}" target="_blank" rel="noopener">Read at source ↗</a></div>`;
+}
+
+function renderFeed(){
+  const c=catObj();
+  if(!items.length){
+    el("#feed").innerHTML=`<div class="empty"><div class="ic">${c.icon||"◆"}</div>
+      <h3>Nothing feeding here yet</h3><p>${esc((CATCOPY[active]||{}).why||"")}</p>
+      <div class="whybox" style="text-align:left;max-width:320px;margin:0 auto">
+      <b>Why</b><p>No configured source for this category is returning items.
+      Open the source panel to see exactly which sources were checked and what each one returned.</p></div></div>`;
+    return;
+  }
+  el("#feed").innerHTML = items.map(cardHTML).join("") +
+    (items.length<total
+      ? `<button class="more" id="more">Load ${Math.min(PAGE,total-items.length)} more &nbsp;·&nbsp; ${items.length} of ${total}</button>`
+      : `<div class="endnote">You've reached the end.<br><b>${total} live items</b> · served by the TRIBLI API</div>`);
+  const m=el("#more");
+  if(m) m.onclick=()=>{ offset=items.length; loadFeed(false); };
+}
+
+/* ---------------- sheets ---------------- */
+function statBar(rows){
+  const t=rows.length||1, seg={};
+  rows.forEach(r=>{seg[r.status]=(seg[r.status]||0)+1;});
+  return `<div class="statbar">${Object.entries(seg).map(([k,v])=>
+    `<i style="display:block;width:${v/t*100}%;background:${(STATUS[k]||STATUS.pending).c}"></i>`).join("")}</div>
+    <div class="legend">${Object.entries(seg).map(([k,v])=>
+    `<span><i class="lg" style="background:${(STATUS[k]||STATUS.pending).c}"></i>${(STATUS[k]||STATUS.pending).l} ${v}</span>`).join("")}</div>`;
+}
+function srcRowLive(s){
+  const S=STATUS[s.status]||STATUS.pending;
+  const isOk = s.status==="ok";
+  return `<div class="srow">
+    <div class="sname"><span class="sdot" style="background:${S.c}"></span>${esc(s.name)}</div>
+    <div class="sbadges">
+      <span class="sb" style="color:${S.c};border-color:${S.c}33">${S.l}${isOk&&s.items?` · ${s.items} items`:""}</span>
+      <span class="sb">${esc(s.kind)}</span>
+    </div>
+    ${isOk
+      ? (s.note?`<div class="snote">${esc(s.note)}</div>`:"")
+      : `<div class="whybox"><b>WHY THIS ISN'T LIVE</b><p>${esc(s.detail||S.d)}</p></div>`}
+  </div>`;
+}
+function srcRowDead(s){
+  const S=STATUS[s.status]||STATUS.pending;
+  return `<div class="srow">
+    <div class="sname"><span class="sdot" style="background:${S.c}"></span>${esc(s.name)}</div>
+    <div class="sbadges"><span class="sb" style="color:${S.c};border-color:${S.c}33">${S.l}</span></div>
+    <div class="whybox"><b>WHY THIS ISN'T LIVE</b><p>${esc(s.reason)}</p></div></div>`;
+}
+
+function catSheet(){
+  if(active==="all") return metricSheet("sources");
+  const live=(srcData.ingesting||[]).filter(s=>s.category===active);
+  const dead=(srcData.not_ingesting||[]).filter(s=>s.category===active);
+  const c=catObj(), copy=CATCOPY[active]||{};
+  el("#sheetbody").innerHTML=`<h3>${esc(c.label)}</h3>
+    <div class="sub">${total} items in feed</div>
+    <div class="block"><div class="lb">Why this category exists</div><p>${esc(copy.why||"")}</p></div>
+    ${live.length?`<div class="block"><div class="lb">Configured sources — ${live.length}</div>
+      ${statBar(live)}<div style="margin-top:11px">${live.map(srcRowLive).join("")}</div></div>`:""}
+    ${dead.length?`<div class="block"><div class="lb">Checked, not ingesting — ${dead.length}</div>
+      ${dead.map(srcRowDead).join("")}</div>`:""}`;
+  el("#scrim").classList.add("open");
+}
+
+function metricSheet(kind){
+  const t=srcData.totals, live=srcData.ingesting||[], dead=srcData.not_ingesting||[];
+  let h="";
+  if(kind==="sources"||kind==="live"){
+    const byCat={};
+    live.forEach(s=>(byCat[s.category]=byCat[s.category]||{live:[],dead:[]}).live.push(s));
+    dead.forEach(s=>{(byCat[s.category]=byCat[s.category]||{live:[],dead:[]}).dead.push(s);});
+    h=`<h3>Source intelligence</h3><div class="sub">Live from the ingestion database</div>
+    <div class="summary3">
+      <p>&#9656; Mapped <b>${t.mapped} real sources</b> across 10 categories — casting, festivals, craft, grants, unions and more.</p>
+      <p>&#9656; <b>${t.feeding} are feeding right now</b>, scraped by the backend on a schedule — not a frozen snapshot.</p>
+      <p>&#9656; The rest aren't hidden — each one below says exactly what happened when we checked it.</p>
+    </div>
+    <div class="kpi"><div><div class="v">${t.mapped}</div><div class="k">Mapped</div></div>
+      <div><div class="v" style="color:var(--green)">${t.feeding}</div><div class="k">Feeding</div></div>
+      <div><div class="v" style="color:var(--amber)">$0</div><div class="k">Spent</div></div></div>
+    <div class="block">${statBar(live)}</div>
+    ${Object.entries(byCat).map(([cid,g])=>{
+      const label=(cats.find(c=>c.id===cid)||{}).label||cid;
+      return `<div class="catgroup"><h4>${esc(label)}<em>${g.live.filter(s=>s.status==="ok").length} feeding · ${g.live.length+g.dead.length} mapped</em></h4>
+        ${g.live.map(srcRowLive).join("")}${g.dead.map(srcRowDead).join("")}</div>`;}).join("")}`;
+  }
+  if(kind==="items"){
+    h=`<h3>Live items</h3><div class="sub">Served from the ingestion database</div>
+    <div class="block"><p>Every item was scraped by the backend, de-duplicated by content fingerprint,
+    filtered for editorial policy, and scored for scam patterns before being stored.
+    Nothing here is sample data.</p></div>
+    <div class="block"><div class="lb">Safety filtering</div>
+    <p>Listings that demand payment from applicants, or request identity and bank documents up front,
+    are <b>never stored</b>. Listings matching exploitation-risk patterns are quarantined for human
+    review rather than shown. No listing is ever auto-marked as TRIBLI-verified.</p></div>`;
+  }
+  if(kind==="cost"){
+    h=`<h3>Spend to date</h3><div class="sub">What this pipeline costs to run</div>
+    <div class="kpi"><div><div class="v" style="color:var(--green)">$0</div><div class="k">Spent</div></div>
+      <div><div class="v">${t.configured}</div><div class="k">Configured</div></div>
+      <div><div class="v" style="color:var(--amber)">1</div><div class="k">Paid API</div></div></div>
+    <div class="block"><p>Every source is free or on a free tier. Festival API is the only paid
+    product in the pipeline and its free tier covers this build entirely — 50 credits on signup,
+    then $20 for 2,000 searches if you outgrow it.</p></div>`;
+  }
+  el("#sheetbody").innerHTML=h;
+  el("#scrim").classList.add("open");
+}
+function closeSheet(){el("#scrim").classList.remove("open");}
+el("#scrim").onclick=e=>{if(e.target.id==="scrim")closeSheet();};
+document.querySelectorAll(".metric").forEach(m=>m.onclick=()=>{
+  if(srcData) metricSheet(m.dataset.m);});
+boot();
+</script>
+</body>
+</html>
