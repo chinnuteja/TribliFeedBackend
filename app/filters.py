@@ -149,8 +149,136 @@ def assess_trust(title, description, org="", source_credibility=3):
     return ("caution" if risk >= 2 else "external"), reasons, float(score)
 
 
+# ---------------------------------------------------------------- quality gates
+# A redirect card is only honest if `link` is the call itself — not a directory,
+# homepage, login wall, or SEO index. Public robots access is not enough.
+_INDEX_SLUGS = {
+    "auditions", "alljobs", "jobs", "job", "search", "browse", "listings",
+    "casting-calls", "casting", "feed", "blog", "news", "login", "signin",
+    "sign-in", "signup", "register", "apply", "category", "categories",
+    "tag", "tags", "page", "home",
+}
+
+_OPP_HIT = re.compile(
+    r"\b(?:hir(?:e|ing)|job opening|\bjobs?\b|walk[- ]?in|vacanc(?:y|ies)|openings?\b|"
+    r"we(?:'| a)re hiring|required at|looking for|now hiring|"
+    r"compositor|roto(?:scop)?|vfx artist|cinematographer|"
+    r"casting call|crew call)\b", re.I)
+
+_OPP_NEWS = re.compile(
+    r"what it is, why it matters|why it matters|learn how|"
+    r"\btutorial\b|\bguide to\b|how it changes", re.I)
+
+_CFE_HIT = re.compile(
+    r"call for entr(?:y|ies)|entries invited|accepting (?:feature )?films|"
+    r"submit(?: your)? (?:films?|entries)|submissions? (?:open|are open)|"
+    r"deadline(?: is| of|:)|entry fee", re.I)
+
+_CFE_NEWS = re.compile(
+    r"opening film|will open the|award winners?|screening dates|"
+    r"winner(?:s)? announced", re.I)
+
+_DATE_ISO = re.compile(r"\b(20\d{2})-(\d{2})-(\d{2})\b")
+_DATE_TEXT = re.compile(
+    r"\b(\d{1,2})(?:st|nd|rd|th)?\s+"
+    r"(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|"
+    r"jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|"
+    r"nov(?:ember)?|dec(?:ember)?)\s+(20\d{2})\b",
+    re.I)
+_DATE_TEXT_US = re.compile(
+    r"\b(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|"
+    r"jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|"
+    r"nov(?:ember)?|dec(?:ember)?)\s+(\d{1,2})(?:st|nd|rd|th)?,?\s+(20\d{2})\b",
+    re.I)
+_MONTHS = {
+    "jan": 1, "january": 1, "feb": 2, "february": 2, "mar": 3, "march": 3,
+    "apr": 4, "april": 4, "may": 5, "jun": 6, "june": 6, "jul": 7, "july": 7,
+    "aug": 8, "august": 8, "sep": 9, "sept": 9, "september": 9,
+    "oct": 10, "october": 10, "nov": 11, "november": 11, "dec": 12, "december": 12,
+}
+
+
+def is_permalink(url):
+    """True when `url` can stand in as a single call, not a site section."""
+    from urllib.parse import urlparse
+    if not url or not isinstance(url, str):
+        return False
+    parsed = urlparse(url.strip())
+    if parsed.scheme not in ("http", "https") or not parsed.netloc:
+        return False
+    parts = [p.lower() for p in parsed.path.split("/") if p]
+    if not parts:
+        return False
+    if parts[-1] in _INDEX_SLUGS:
+        return False
+    return True
+
+
+def opportunity_relevant(title, description=""):
+    """True when this RSS/HTML blob is a job, not a blog post about jobs."""
+    t = (title or "").strip()
+    if len(t) < 8:
+        return False
+    blob = f"{t} {description or ''}"
+    if _OPP_NEWS.search(blob):
+        return False
+    return bool(_OPP_HIT.search(blob))
+
+
+def call_for_entry(title, description=""):
+    """True when a festival post is an open call, not an opening-film recap."""
+    t = (title or "").strip()
+    if len(t) < 8:
+        return False
+    blob = f"{t} {description or ''}"
+    if _CFE_NEWS.search(blob) and not _CFE_HIT.search(blob):
+        return False
+    return bool(_CFE_HIT.search(blob))
+
+
+def extract_deadline(*fields):
+    """Best-effort ISO date from free text. Empty if nothing confident."""
+    blob = " ".join(str(f or "") for f in fields)
+    m = _DATE_ISO.search(blob)
+    if m:
+        return f"{m.group(1)}-{m.group(2)}-{m.group(3)}"
+    m = _DATE_TEXT.search(blob)
+    if m:
+        month = _MONTHS.get(m.group(2).lower())
+        if month:
+            return f"{m.group(3)}-{month:02d}-{int(m.group(1)):02d}"
+    m = _DATE_TEXT_US.search(blob)
+    if m:
+        month = _MONTHS.get(m.group(1).lower())
+        if month:
+            return f"{m.group(3)}-{month:02d}-{int(m.group(2)):02d}"
+    return ""
+
+
+def deadline_current(deadline, today=None):
+    """False when missing, malformed, or already past."""
+    import datetime as _dt
+    d = (deadline or "")[:10]
+    if not re.match(r"^\d{4}-\d{2}-\d{2}$", d):
+        return False
+    today = today or _dt.date.today()
+    try:
+        return _dt.date.fromisoformat(d) >= today
+    except ValueError:
+        return False
+
+
 # ---------------------------------------------------------------- identity
 _NORM = re.compile(r"[^a-z0-9]+")
+
+
+def festival_stem(title):
+    """Identity used to collapse the same festival arriving from two sources."""
+    t = (title or "").lower()
+    t = re.sub(r"\b(?:call for entr(?:y|ies)|cfe)\b", " ", t)
+    t = re.sub(r"\b\d{1,2}(?:st|nd|rd|th)\b", " ", t)
+    t = re.sub(r"\b20\d{2}\b", " ", t)
+    return _NORM.sub(" ", t).strip()[:70]
 
 
 def fingerprint(source, title, link=""):
@@ -162,6 +290,33 @@ def fingerprint(source, title, link=""):
     stem = _NORM.sub(" ", (title or "").lower()).strip()[:70]
     basis = f"{source}|{stem}" if stem else f"{source}|{link}"
     return hashlib.sha1(basis.encode("utf-8")).hexdigest()
+
+
+def build_item(source, *, kind, title, link, display_mode="full", **extra):
+    """Shared item shape so every scraper stamps the same provenance fields."""
+    import datetime as _dt
+    pub = (extra.pop("publisher", None) or source.get("publisher")
+           or source.get("name") or "")
+    src_url = (extra.pop("source_url", None) or source.get("url")
+               or source.get("sitemap") or link)
+    return dict(
+        id=extra.pop("id", None) or fingerprint(source["id"], title, link),
+        kind=kind,
+        category=source["category"],
+        source=source["name"],
+        source_id=source["id"],
+        publisher=pub,
+        source_url=src_url,
+        display_mode=display_mode,
+        verified_at=extra.pop("verified_at", "") or (
+            _dt.date.today().isoformat() if display_mode == "redirect" else ""),
+        title=title,
+        link=link,
+        trust=extra.pop("trust", "external"),
+        trust_reasons=extra.pop("trust_reasons", []),
+        raw=extra.pop("raw", {}),
+        **extra,
+    )
 
 
 # ---------------------------------------------------------------- region

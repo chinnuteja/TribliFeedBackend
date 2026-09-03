@@ -78,6 +78,7 @@ def sources():
             "name": s["name"], "category": s["category"], "kind": s["kind"],
             "credibility": s.get("credibility", 3),
             "note": s.get("note", ""),
+            "acquisition": ("redirect" if s["kind"] == "official_call" else "full"),
             "status": h.get("status", "pending"),
             "items": db.items_by_source(s["name"]),
             "fetched": h.get("fetched", 0),
@@ -85,15 +86,26 @@ def sources():
             "last_run": h.get("finished_at"),
             "detail": h.get("detail", ""),
         })
+    dead = []
+    for s in NOT_INGESTING:
+        dead.append({
+            **s,
+            "acquisition": s.get("acquisition") or (
+                "rejected" if s.get("status") == "rejected" else
+                "watch" if s.get("status") in ("untested", "nofeed") else
+                s.get("status") or "watch"),
+        })
     return {
         "ingesting": live,
-        "not_ingesting": NOT_INGESTING,
+        "not_ingesting": dead,
         "totals": {
             "mapped": len(SOURCES) + len(NOT_INGESTING),
             "configured": len(SOURCES),
             "feeding": sum(1 for s in live if s["status"] == "ok"),
             "blocked": sum(1 for s in live if s["status"] in ("blocked", "error")),
             "empty": sum(1 for s in live if s["status"] == "empty"),
+            "watching": sum(1 for s in dead if s.get("acquisition") == "watch"),
+            "rejected_quality": sum(1 for s in dead if s.get("acquisition") == "rejected"),
         },
     }
 

@@ -2,15 +2,24 @@
 Festival API client (festivalapi.com).
 
 The only paid product in the pipeline, and it runs on the free tier.
-Credits are consumed per search, so we deliberately make few, wide calls
-rather than many narrow ones, and only ask for deadlines that are still open.
+Credits are consumed per search. Named query plans stop at
+FESTIVAL_API_CREDIT_CAP. A failed page is recorded, not swallowed as a
+short successful list. Auth / 402 remain terminal Blocked.
 """
 import datetime
-from ..fetcher import get_json, Blocked
-from ..config import FESTIVAL_API_KEY
-from ..filters import clean_text, fingerprint
+from ..fetcher import get_json, Blocked, FetchError
+from ..config import FESTIVAL_API_KEY, FESTIVAL_API_CREDIT_CAP
+from ..filters import clean_text, fingerprint, build_item, region_tier
 
 BASE = "https://festivalapi.com/v1"
+
+_run_notes = []
+
+
+def take_run_notes():
+    notes = list(_run_notes)
+    _run_notes.clear()
+    return notes
 
 
 def _headers():
@@ -35,56 +44,91 @@ def _norm(f, tier):
 
     loc = ", ".join([p for p in [f.get("city") or "", f.get("country") or ""] if p])
     cats = ", ".join((f.get("categories") or [])[:3])
+    deadline = (f.get("deadline_regular") or f.get("nearest_deadline")
+                or f.get("deadline") or "")[:10]
+    if not tier:
+        country = (f.get("country") or "")
+        tier = "india" if country.lower() == "india" else "global"
 
-    return dict(
+    return build_item(
+        {"id": "festivalapi", "name": "Festival API", "category": "festivals",
+         "publisher": "Festival API"},
         id=fingerprint("festivalapi", name, link),
         kind="festival",
-        category="festivals",
-        source="Festival API",
         title=name,
-        description=(f"Accepts: {cats}" if cats else clean_text(f.get("description"), 250)),
         link=link,
+        display_mode="full",
+        description=(f"Accepts: {cats}" if cats else clean_text(f.get("description"), 250)),
         org=clean_text(f.get("organizer"), 90),
         location=loc,
         region_tier=tier,
         fee=fee,
-        deadline=(f.get("deadline_regular") or "")[:10],
         posted_at="",
-        trust="external",
-        trust_reasons=[],
-        raw={"event_dates": f.get("event_dates")},
+        deadline=deadline,
+        raw={"event_dates": f.get("event_dates"), "query_tier": tier},
     )
 
 
-def scrape(source):
-    """India-first, then a slice of open international calls."""
-    today = datetime.date.today().isoformat()
-    out, raw_count = [], 0
-
-    plans = [
-        (f"{BASE}/festivals/?country=India&deadline_after={today}&limit=20&page=1", "india"),
-        (f"{BASE}/festivals/?country=India&deadline_after={today}&limit=20&page=2", "india"),
-        (f"{BASE}/festivals/?deadline_after={today}&limit=20&page=1", "global"),
+def query_plans(today=None):
+    """Named searches, cheapest India-first. Cost is Festival API credits."""
+    today = today or datetime.date.today().isoformat()
+    return [
+        dict(id="india_open", cost=1, tier="india",
+             url=(f"{BASE}/festivals/?country=India&deadline_after={today}"
+                  f"&sort=deadline&sort_dir=asc&limit=20&page=1")),
+        dict(id="india_short", cost=1, tier="india",
+             url=(f"{BASE}/festivals/?country=India&category=short_film"
+                  f"&deadline_after={today}&limit=20&page=1")),
+        dict(id="closing_soon", cost=2, tier="",
+             url=f"{BASE}/deadlines/closing-soon?days=21&limit=20"),
+        dict(id="india_doc", cost=1, tier="india",
+             url=(f"{BASE}/festivals/?country=India&category=documentary"
+                  f"&deadline_after={today}&limit=20&page=1")),
+        dict(id="global_open", cost=1, tier="global",
+             url=(f"{BASE}/festivals/?deadline_after={today}&limit=20&page=1")),
     ]
 
+
+def scrape(source):
+    """India / short / closing-soon first, then a bounded international slice."""
+    _run_notes.clear()
+    cap = int(source.get("credit_cap") or FESTIVAL_API_CREDIT_CAP)
+    spent = 0
+    out, raw_count = [], 0
     seen = set()
-    for url, tier in plans:
+    headers = _headers()
+    planned = query_plans()
+    ran = []
+
+    for plan in planned:
+        if spent + plan["cost"] > cap:
+            _run_notes.append(
+                f"skipped {plan['id']} (would be {spent + plan['cost']}/{cap} credits)")
+            continue
         try:
-            data = get_json(url, headers=_headers())
+            data = get_json(plan["url"], headers=headers)
         except Blocked:
             raise
-        except Exception:
+        except FetchError as e:
+            _run_notes.append(f"{plan['id']}: {e}")
             continue
-        results = data.get("results", [])
+        except Exception as e:
+            _run_notes.append(f"{plan['id']}: {type(e).__name__}: {e}")
+            continue
+        spent += plan["cost"]
+        ran.append(plan["id"])
+        results = data.get("results") or data.get("festivals") or []
+        if isinstance(data, list):
+            results = data
         raw_count += len(results)
         for f in results:
-            fid = f.get("id")
+            fid = f.get("id") or f.get("name")
             if fid in seen:
                 continue
             seen.add(fid)
-            item = _norm(f, tier)
+            item = _norm(f, plan["tier"])
             if item:
                 out.append(item)
-        if data.get("page", 1) >= data.get("total_pages", 1) and tier == "india":
-            continue
+
+    _run_notes.append(f"credits={spent}/{cap} queries={','.join(ran) or 'none'}")
     return out, raw_count

@@ -21,9 +21,14 @@ CREATE TABLE IF NOT EXISTS items (
     fee             TEXT,
     posted_at       TEXT,
     deadline        TEXT,
-    trust           TEXT DEFAULT 'external',   -- external | flagged | verified
+    trust           TEXT DEFAULT 'external',   -- external | caution | quarantine
     trust_reasons   TEXT,                      -- JSON array
     raw             TEXT,                      -- JSON of source fields
+    source_id       TEXT,                      -- registry id; empty on pre-migration rows
+    publisher       TEXT,                      -- display attribution
+    source_url      TEXT,                      -- publisher home / feed, not the item link
+    display_mode    TEXT DEFAULT 'full',       -- full | redirect
+    verified_at     TEXT,                      -- ISO date the permalink was last confirmed
     first_seen      TEXT DEFAULT (datetime('now')),
     last_seen       TEXT DEFAULT (datetime('now')),
     active          INTEGER DEFAULT 1
@@ -78,31 +83,119 @@ def tx():
         raise
 
 
+_NEW_COLUMNS = (
+    ("source_id", "TEXT"),
+    ("publisher", "TEXT"),
+    ("source_url", "TEXT"),
+    ("display_mode", "TEXT DEFAULT 'full'"),
+    ("verified_at", "TEXT"),
+)
+
+
+def _migrate(conn):
+    """Add provenance columns to databases created before this schema."""
+    have = {r[1] for r in conn.execute("PRAGMA table_info(items)").fetchall()}
+    for name, decl in _NEW_COLUMNS:
+        if name not in have:
+            conn.execute(f"ALTER TABLE items ADD COLUMN {name} {decl}")
+    conn.execute(
+        "UPDATE items SET display_mode='full' "
+        "WHERE display_mode IS NULL OR display_mode=''")
+    conn.execute(
+        "UPDATE items SET publisher=source "
+        "WHERE publisher IS NULL OR publisher=''")
+
+
 def init_db():
     with tx() as c:
         c.executescript(SCHEMA)
+        _migrate(c)
+
+
+def _festival_duplicate(conn, it):
+    """Same festival arriving from API and editorial RSS collapses to one row."""
+    if it.get("kind") != "festival":
+        return None
+    from .filters import festival_stem
+    stem = festival_stem(it.get("title"))
+    if not stem:
+        return None
+    rows = conn.execute(
+        "SELECT id, title, deadline, display_mode, fee, link, source "
+        "FROM items WHERE kind='festival' AND active=1"
+    ).fetchall()
+    incoming_dl = (it.get("deadline") or "")[:10]
+    for r in rows:
+        if festival_stem(r["title"]) != stem:
+            continue
+        their_dl = (r["deadline"] or "")[:10]
+        if their_dl and incoming_dl and their_dl != incoming_dl:
+            continue
+        return r
+    return None
 
 
 def upsert_items(items):
-    """Insert new items, refresh last_seen on ones we've seen before.
+    """Insert new items, refresh mutable facts on ones we've seen before.
     Returns (new_count, seen_count)."""
     new = seen = 0
     with tx() as c:
         for it in items:
-            row = c.execute("SELECT id FROM items WHERE id=?", (it["id"],)).fetchone()
+            row = c.execute(
+                "SELECT id, display_mode FROM items WHERE id=?", (it["id"],)
+            ).fetchone()
+            if row is None:
+                dup = _festival_duplicate(c, it)
+                if dup is not None:
+                    row = dup
+                    it = {**it, "id": dup["id"]}
             if row:
-                c.execute(
-                    "UPDATE items SET last_seen=datetime('now'), active=1, "
-                    "deadline=COALESCE(?,deadline) WHERE id=?",
-                    (it.get("deadline"), it["id"]),
-                )
+                existing_mode = (row["display_mode"] if "display_mode" in row.keys()
+                                 else None) or "full"
+                incoming_mode = it.get("display_mode") or "full"
+                # A redirect must not overwrite a richer full ingest of the
+                # same festival / listing.
+                if existing_mode == "full" and incoming_mode == "redirect":
+                    c.execute(
+                        "UPDATE items SET last_seen=datetime('now'), active=1 WHERE id=?",
+                        (row["id"],),
+                    )
+                else:
+                    c.execute(
+                        """UPDATE items SET last_seen=datetime('now'), active=1,
+                           title=?, description=?, link=?, org=?, location=?,
+                           region_tier=?, employment_type=?, fee=?, posted_at=?,
+                           deadline=?, trust=?, trust_reasons=?,
+                           source_id=COALESCE(NULLIF(?,''), source_id),
+                           publisher=COALESCE(NULLIF(?,''), publisher),
+                           source_url=COALESCE(NULLIF(?,''), source_url),
+                           display_mode=?,
+                           verified_at=COALESCE(NULLIF(?,''), verified_at)
+                           WHERE id=?""",
+                        (
+                            it["title"], it.get("description"), it["link"],
+                            it.get("org"), it.get("location"), it.get("region_tier"),
+                            it.get("employment_type"), it.get("fee"),
+                            it.get("posted_at"), it.get("deadline"),
+                            it.get("trust", "external"),
+                            json.dumps(it.get("trust_reasons", [])),
+                            it.get("source_id") or "",
+                            it.get("publisher") or "",
+                            it.get("source_url") or "",
+                            incoming_mode,
+                            it.get("verified_at") or "",
+                            row["id"],
+                        ),
+                    )
                 seen += 1
             else:
                 c.execute(
                     """INSERT INTO items
                     (id,kind,category,source,title,description,link,org,location,
-                     region_tier,employment_type,fee,posted_at,deadline,trust,trust_reasons,raw)
-                    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                     region_tier,employment_type,fee,posted_at,deadline,trust,
+                     trust_reasons,raw,source_id,publisher,source_url,display_mode,
+                     verified_at)
+                    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
                     (
                         it["id"], it["kind"], it["category"], it["source"],
                         it["title"], it.get("description"), it["link"],
@@ -112,6 +205,11 @@ def upsert_items(items):
                         it.get("trust", "external"),
                         json.dumps(it.get("trust_reasons", [])),
                         json.dumps(it.get("raw", {}))[:8000],
+                        it.get("source_id") or "",
+                        it.get("publisher") or it.get("source") or "",
+                        it.get("source_url") or "",
+                        it.get("display_mode") or "full",
+                        it.get("verified_at") or "",
                     ),
                 )
                 new += 1
@@ -225,12 +323,14 @@ def query_items(category="all", limit=30, offset=0, tier=None,
     with tx() as c:
         total = c.execute(f"SELECT COUNT(*) n FROM items WHERE {clause}",
                           params).fetchone()["n"]
-        # Pull a wide slice, interleave, then page — keeps source mixing stable
+        # Interleave after fetch so one board cannot own the page. Cap is a
+        # safety bound, not a silent pagination cliff: 400 used to disagree
+        # with `total` once the table grew past the prefetch.
         rows = c.execute(
             f"""SELECT * FROM items WHERE {clause}
                 ORDER BY (deadline IS NOT NULL AND deadline!='') DESC,
                          COALESCE(NULLIF(posted_at,''), date(first_seen)) DESC
-                LIMIT 400""", params).fetchall()
+                LIMIT 5000""", params).fetchall()
 
     mixed = _interleave([_row_to_item(r) for r in rows])
     return mixed[offset:offset + limit], total
@@ -239,12 +339,14 @@ def query_items(category="all", limit=30, offset=0, tier=None,
 def category_counts():
     with tx() as c:
         rows = c.execute(
-            "SELECT category, COUNT(*) n FROM items WHERE active=1 GROUP BY category"
+            "SELECT category, COUNT(*) n FROM items WHERE active=1 "
+            "AND trust != 'quarantine' GROUP BY category"
         ).fetchall()
         out = {r["category"]: r["n"] for r in rows}
         t = c.execute(
-            "SELECT COUNT(*) n FROM items WHERE active=1 AND kind='opportunity' "
-            "AND region_tier IN ('telugu','south')").fetchone()["n"]
+            "SELECT COUNT(*) n FROM items WHERE active=1 AND trust != 'quarantine' "
+            "AND kind='opportunity' AND region_tier IN ('telugu','south')"
+        ).fetchone()["n"]
     out["_telugu"] = t
     return out
 

@@ -77,6 +77,8 @@ text-decoration:none;border-bottom:1px solid var(--line2);padding-bottom:2px;}
 .op{border-left:2px solid var(--amberdim);}
 .fest{border-left:2px solid #3E5A72;}
 .fest .src{color:var(--blue);}
+.redir{border-left:2px solid var(--green);}
+.redir .src{color:var(--green);}
 .row{display:flex;gap:6px;flex-wrap:wrap;margin:9px 0 2px;}
 .tag{font-family:'JetBrains Mono',monospace;font-size:8.5px;padding:3.5px 7px;border-radius:4px;
 background:var(--surface2);color:var(--ink2);border:1px solid var(--line);}
@@ -218,6 +220,8 @@ const STATUS={
  untested:{c:"var(--purple)",l:"Untested",d:"Not probed yet. Status genuinely unknown."},
  rejected:{c:"var(--ink3)",l:"Rejected",d:"Works, but the content fails our editorial policy."},
  pending:{c:"var(--ink3)",l:"Pending",d:"Configured but not yet run."},
+ skipped:{c:"var(--ink3)",l:"Skipped",d:"Not due for refresh this run."},
+ watch:{c:"var(--purple)",l:"Watching",d:"No public permalink or feed yet. Not a card."},
 };
 
 let cats=[], active="all", items=[], total=0, offset=0, srcData=null, loading=false;
@@ -296,31 +300,60 @@ async function loadFeed(reset){
   loading=false;
 }
 
+function ctaLabel(it){
+  if(it.display_mode==="redirect"){
+    const pub = it.publisher || it.source || "source";
+    if(it.kind==="festival") return `Submit on ${pub} ↗`;
+    if(it.category==="grants") return `Apply on ${pub} ↗`;
+    return `Open ${pub} ↗`;
+  }
+  if(it.kind==="festival") return "Submission page ↗";
+  if(it.kind==="opportunity") return "Open source ↗";
+  return "Read at source ↗";
+}
 function cardHTML(it,i){
   const delay=`style="animation-delay:${Math.min(i%PAGE,14)*20}ms"`;
   const kind = it.kind;
-  if(kind==="opportunity"){
-    const caution = it.trust==="caution";
-    return `<div class="card op" ${delay}>
+  const redir = it.display_mode==="redirect";
+  const cls = `${redir?"redir":""} ${kind==="opportunity"?"op":kind==="festival"?"fest":""}`.trim();
+  const caution = it.trust==="caution";
+  const reasons = Array.isArray(it.trust_reasons)?it.trust_reasons:[];
+  const cautionLine = kind==="opportunity" && !redir
+    ? `<div class="trust"><span class="tdot ${caution?"caution":""}"></span>${
+        caution?`Flagged &middot; <b>review before applying</b>${
+          reasons.length?`<br>${esc(reasons[0])}`:""}`
+        :"External listing &middot; <b>not yet TRIBLI-verified</b>"}</div>`
+    : (redir?`<div class="trust"><span class="tdot"></span>Official page &middot; <b>opens ${esc(it.publisher||it.source)} — leaves TRIBLI</b></div>`:"");
+  if(kind==="opportunity" || (redir && kind!=="festival")){
+    return `<div class="card ${cls}" ${delay}>
       <div class="meta"><span class="src">${esc(it.source)}</span><span class="dot"></span>
-        <span class="date">${ago(it.posted_at)}</span></div>
+        <span class="date">${ago(it.posted_at)||ago(it.verified_at)}</span></div>
       <h3>${esc(it.title)}</h3>${it.description?`<p>${esc(it.description)}</p>`:""}
       <div class="row">${it.location?`<span class="tag loc">${esc(it.location)}</span>`:""}
         ${it.org?`<span class="tag">${esc(it.org)}</span>`:""}
         ${it.employment_type?`<span class="tag">${esc(it.employment_type)}</span>`:""}
         ${dlTag(it.deadline)}</div>
-      <div class="trust"><span class="tdot ${caution?"caution":""}"></span>${
-        caution?"Flagged &middot; <b>review before applying</b>":"External listing &middot; <b>not yet TRIBLI-verified</b>"}</div><br>
-      <a class="readlink" href="${esc(it.link)}" target="_blank" rel="noopener">Open source ↗</a></div>`;
+      ${cautionLine}<br>
+      <a class="readlink" href="${esc(it.link)}" target="_blank" rel="noopener">${esc(ctaLabel(it))}</a></div>`;
   }
   if(kind==="festival"){
-    return `<div class="card fest" ${delay}>
+    return `<div class="card ${cls||"fest"}" ${delay}>
       <div class="meta"><span class="src">${esc(it.source)}</span><span class="dot"></span>
         <span class="date">${it.region_tier==="india"?"India":"International"}</span></div>
       <h3>${esc(it.title)}</h3>${it.description?`<p>${esc(it.description)}</p>`:""}
       <div class="row">${it.location?`<span class="tag loc">${esc(it.location)}</span>`:""}
         ${it.fee?`<span class="tag fee">${esc(it.fee)}</span>`:""}${dlTag(it.deadline)}</div>
-      <a class="readlink" href="${esc(it.link)}" target="_blank" rel="noopener">Submission page ↗</a></div>`;
+      ${redir?cautionLine+"<br>":""}
+      <a class="readlink" href="${esc(it.link)}" target="_blank" rel="noopener">${esc(ctaLabel(it))}</a></div>`;
+  }
+  if(redir){
+    return `<div class="card redir" ${delay}>
+      <div class="meta"><span class="src">${esc(it.source)}</span><span class="dot"></span>
+        <span class="date">${ago(it.verified_at)||ago(it.posted_at)}</span></div>
+      <h3>${esc(it.title)}</h3>${it.description?`<p>${esc(it.description)}</p>`:""}
+      <div class="row">${it.org?`<span class="tag">${esc(it.org)}</span>`:""}${dlTag(it.deadline)}</div>
+      ${cautionLine}<br>
+      <a class="readlink" href="${esc(it.link)}" target="_blank" rel="noopener">${esc(ctaLabel(it))}</a></div>`;
   }
   return `<div class="card" ${delay}>
     <div class="meta"><span class="src">${esc(it.source)}</span><span class="dot"></span>
@@ -356,6 +389,14 @@ function statBar(rows){
     <div class="legend">${Object.entries(seg).map(([k,v])=>
     `<span><i class="lg" style="background:${(STATUS[k]||STATUS.pending).c}"></i>${(STATUS[k]||STATUS.pending).l} ${v}</span>`).join("")}</div>`;
 }
+function acqBadge(s){
+  const a=s.acquisition;
+  if(a==="full") return `<span class="sb">full ingest</span>`;
+  if(a==="redirect") return `<span class="sb">redirect-only</span>`;
+  if(a==="watch") return `<span class="sb">watching</span>`;
+  if(a==="rejected") return `<span class="sb">rejected for quality</span>`;
+  return a?`<span class="sb">${esc(a)}</span>`:"";
+}
 function srcRowLive(s){
   const S=STATUS[s.status]||STATUS.pending;
   const isOk = s.status==="ok";
@@ -363,7 +404,7 @@ function srcRowLive(s){
     <div class="sname"><span class="sdot" style="background:${S.c}"></span>${esc(s.name)}</div>
     <div class="sbadges">
       <span class="sb" style="color:${S.c};border-color:${S.c}33">${S.l}${isOk&&s.items?` · ${s.items} items`:""}</span>
-      <span class="sb">${esc(s.kind)}</span>
+      <span class="sb">${esc(s.kind)}</span>${acqBadge(s)}
     </div>
     ${isOk
       ? (s.note?`<div class="snote">${esc(s.note)}</div>`:"")
@@ -374,7 +415,7 @@ function srcRowDead(s){
   const S=STATUS[s.status]||STATUS.pending;
   return `<div class="srow">
     <div class="sname"><span class="sdot" style="background:${S.c}"></span>${esc(s.name)}</div>
-    <div class="sbadges"><span class="sb" style="color:${S.c};border-color:${S.c}33">${S.l}</span></div>
+    <div class="sbadges"><span class="sb" style="color:${S.c};border-color:${S.c}33">${S.l}</span>${acqBadge(s)}</div>
     <div class="whybox"><b>WHY THIS ISN'T LIVE</b><p>${esc(s.reason)}</p></div></div>`;
 }
 
@@ -404,6 +445,7 @@ function metricSheet(kind){
     <div class="summary3">
       <p>&#9656; Mapped <b>${t.mapped} real sources</b> across 10 categories — casting, festivals, craft, grants, unions and more.</p>
       <p>&#9656; <b>${t.feeding} are feeding right now</b>, scraped by the backend on a schedule — not a frozen snapshot.</p>
+      <p>&#9656; Acquisition is <b>full ingest</b> when we store the listing, <b>redirect-only</b> when we card a verified official permalink (the tap leaves TRIBLI), <b>watching</b> until a public per-post URL exists, or <b>rejected for quality</b>. Blocked sources stay listed with the HTTP/robots reason.</p>
       <p>&#9656; The rest aren't hidden — each one below says exactly what happened when we checked it.</p>
     </div>
     <div class="kpi"><div><div class="v">${t.mapped}</div><div class="k">Mapped</div></div>

@@ -11,22 +11,32 @@ from . import db
 from .config import INGEST_INTERVAL_MIN
 from .sources import SOURCES
 from .fetcher import Blocked, FetchError, take_retry_notes
-from .scrapers import rss, jobposting, festivalapi
+from .scrapers import rss, jobposting, festivalapi, rss_opportunity, rss_festival, official_call
 
-SCRAPERS = {"rss": rss, "jobposting": jobposting, "festivalapi": festivalapi}
+SCRAPERS = {
+    "rss": rss,
+    "jobposting": jobposting,
+    "festivalapi": festivalapi,
+    "rss_opportunity": rss_opportunity,
+    "rss_festival": rss_festival,
+    "official_call": official_call,
+}
 
 
 def run_source(source):
     run_id = db.start_run(source["name"])
     t0 = time.time()
     take_retry_notes()                      # notes are per-source; start clean
+    mod = SCRAPERS[source["kind"]]
 
     def detail(extra=""):
-        """Run detail plus any retries the fetcher recorded for this source."""
-        return "; ".join(x for x in [extra, *take_retry_notes()] if x)
+        """Run detail plus any retries / scraper notes recorded for this source."""
+        bits = [extra, *take_retry_notes()]
+        if hasattr(mod, "take_run_notes"):
+            bits.extend(mod.take_run_notes())
+        return "; ".join(x for x in bits if x)
 
     try:
-        mod = SCRAPERS[source["kind"]]
         items, raw_count = mod.scrape(source)
         new, seen = db.upsert_items(items)
         status = "ok" if items else "empty"

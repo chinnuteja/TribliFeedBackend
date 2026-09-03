@@ -55,6 +55,13 @@ DETAIL_LIMIT = int(os.getenv("TRIBLI_DETAIL_LIMIT", "60"))
 # each buried the categories people actually open the app for.
 ARTICLE_LIMIT = int(os.getenv("TRIBLI_ARTICLE_LIMIT", "5"))
 
+# Job RSS is denser than craft blogs; still cap so one hourly board cannot
+# bury AIO Cine / Castkro in the interleaved Opportunities rail.
+OPPORTUNITY_RSS_LIMIT = int(os.getenv("TRIBLI_OPP_RSS_LIMIT", "15"))
+
+# Festival API bills per search. A named query plan must stop before this cap.
+FESTIVAL_API_CREDIT_CAP = int(os.getenv("TRIBLI_FESTIVAL_CREDITS", "6"))
+
 # Scheduler
 INGEST_INTERVAL_MIN = int(os.getenv("TRIBLI_INTERVAL_MIN", "180"))  # every 3 hours
 RUN_ON_BOOT = os.getenv("TRIBLI_RUN_ON_BOOT", "1") == "1"
