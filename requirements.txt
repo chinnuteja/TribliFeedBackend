@@ -3,3 +3,7 @@ feedparser>=6.0
 fastapi>=0.110
 uvicorn>=0.29
 apscheduler>=3.10
+pydantic>=2
+python-multipart>=0.0.9
+google-genai>=1.0
+psycopg[binary]>=3.2

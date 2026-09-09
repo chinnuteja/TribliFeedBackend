@@ -104,4 +104,24 @@ iffks = [i for i in fests if "IFFK" in i["title"]]
 assert len(iffks) == 1, [i["id"] for i in iffks]
 assert iffks[0]["fee"] == "$0 entry" or iffks[0]["link"].startswith("https://filmfreeway")
 
+# Legacy unpadded Dazzlerr deadlines are canonicalised, then expire normally.
+db.upsert_items([
+    dict(id="legacy-date", kind="opportunity", category="casting",
+         source="Dazzlerr", title="Expired legacy listing",
+         link="https://dazzlerr.example/job/legacy", deadline="1-1-2020",
+         display_mode="full")
+])
+db.init_db()
+with db.tx() as c:
+    legacy = c.execute(
+        "SELECT deadline FROM items WHERE id='legacy-date'"
+    ).fetchone()
+assert legacy["deadline"] == "2020-01-01", legacy["deadline"]
+db.expire_stale()
+with db.tx() as c:
+    legacy = c.execute(
+        "SELECT active FROM items WHERE id='legacy-date'"
+    ).fetchone()
+assert legacy["active"] == 0, legacy["active"]
+
 print("item provenance OK")

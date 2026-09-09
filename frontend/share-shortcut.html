@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#FFFFFF">
+<title>iPhone Shortcut — TRIBLI</title>
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Open+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/share.css">
+</head>
+<body>
+<div class="share-shell">
+  <header class="share-header">
+    <a class="icon-button" href="/share/setup" aria-label="Back to setup"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m15 18-6-6 6-6" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+    <a class="brand" href="/" aria-label="TRIBLI home"><span class="brand-glyph"></span><span>TRIBLI</span></a>
+    <span></span>
+  </header>
+  <main class="share-main">
+    <p class="eyebrow">iPhone setup</p>
+    <h1>Create the Share Shortcut</h1>
+    <p class="intro">Safari PWAs cannot appear in the iOS share sheet. A personal Shortcut gives your team the same share-to-TRIBLI flow.</p>
+    <div class="panel">
+      <ol class="step-list">
+        <li><span>Open <a class="text-link" href="/share/setup">device setup</a>, connect this phone and copy the Shortcut token.</span></li>
+        <li><span>In Shortcuts, create <strong>Share to TRIBLI</strong> and enable it in the Share Sheet for <strong>Text, URLs and Images</strong>.</span></li>
+        <li><span>Add <strong>Get URLs from Input</strong> and <strong>Get Images from Input</strong> when present.</span></li>
+        <li><span>Add <strong>Get Contents of URL</strong> using the request contract below.</span></li>
+      </ol>
+    </div>
+    <pre class="contract" id="contract">POST {ORIGIN}/api/share
+Authorization: Bearer {DEVICE_TOKEN}
+Content-Type: multipart/form-data
+
+text  = Shortcut Input (text)
+url   = first https URL in the input
+image = first image (JPEG/PNG/WebP/HEIC)</pre>
+    <div class="info"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.4v.1" stroke-linecap="round"/></svg><span>TRIBLI never scrapes WhatsApp. A channel invite alone is not a specific opportunity, so include the caption or poster.</span></div>
+    <nav class="link-row" aria-label="Share help"><a href="/share/setup">Device setup</a><span>·</span><a href="/share">Paste fallback</a><span>·</span><a href="/">Feed</a></nav>
+  </main>
+</div>
+<script>document.getElementById('contract').textContent=document.getElementById('contract').textContent.replace('{ORIGIN}',location.origin);if('serviceWorker'in navigator)navigator.serviceWorker.register('/service-worker.js');</script>
+</body>
+</html>

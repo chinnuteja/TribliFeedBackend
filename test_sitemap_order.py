@@ -1,5 +1,5 @@
 """Sitemap URLs must come back newest-lastmod-first. python test_sitemap_order.py"""
-from app.scrapers.jobposting import _sitemap_urls
+from app.scrapers.jobposting import _norm_date, _sitemap_urls
 
 
 def sm(*pairs):
@@ -42,3 +42,10 @@ assert _su(xml, 60) == ["/new", "/edge", "/undated"], _su(xml, 60)   # edge kept
 assert _su(xml, None) == ["/new", "/edge", "/old", "/undated"]       # off = unchanged
 assert _su(xml, 1) == ["/undated"], _su(xml, 1)                      # unknown age kept
 print("max_age_days OK")
+
+# Dazzlerr uses both padded and unpadded day-first dates.
+assert _norm_date("31-08-2026T00:00") == "2026-08-31"
+assert _norm_date("9-7-2026") == "2026-07-09"
+assert _norm_date("2026-09-08") == "2026-09-08"
+assert _norm_date("31-02-2026") == ""
+print("deadline normalisation OK")

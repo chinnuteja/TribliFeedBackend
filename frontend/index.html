@@ -3,487 +3,142 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#FFFFFF">
 <title>TRIBLI — Feed</title>
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/static/icons/icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Familjen+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Open+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#0B0A09;--surface:#141210;--surface2:#1C1917;--line:#2A2622;--line2:#3A342E;
---ink:#F5F0E8;--ink2:#A8A096;--ink3:#6E665D;--amber:#E8873A;--amberdim:#7A4A1E;
---green:#5FA463;--blue:#5B8AAE;--red:#C4553F;--purple:#9C7BB5;}
-*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
-html,body{background:#08302E;}
-body{font-family:'Familjen Grotesk',system-ui,sans-serif;color:var(--ink);display:flex;
-justify-content:center;min-height:100vh;
-background:radial-gradient(900px 500px at 20% -10%,#0d4f4a 0%,transparent 60%),
-radial-gradient(700px 600px at 100% 100%,#0a3b38 0%,transparent 55%),#08302E;}
-.shell{width:100%;max-width:430px;background:var(--bg);min-height:100vh;position:relative;
-overflow:hidden;box-shadow:0 40px 120px rgba(0,0,0,.6);display:flex;flex-direction:column;}
-@media(min-width:900px){body{padding:28px 0;align-items:flex-start;}
-.shell{border-radius:34px;min-height:calc(100vh - 56px);max-height:940px;border:1px solid #2a2622;}}
-.grain{position:absolute;inset:0;pointer-events:none;z-index:60;opacity:.15;mix-blend-mode:overlay;
-background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E");}
-header{padding:15px 18px 0;background:var(--bg);z-index:20;flex:none;}
-.brandrow{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px;}
-.brand{font-family:'Instrument Serif',serif;font-size:27px;line-height:1;}
-.brand span{color:var(--amber);}
-.livebadge{display:flex;align-items:center;gap:6px;font-family:'JetBrains Mono',monospace;
-font-size:8px;letter-spacing:.13em;text-transform:uppercase;color:var(--green);
-border:1px solid #2a4a2e;background:#131c14;padding:4px 8px;border-radius:20px;}
-.pulse{width:5px;height:5px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
-.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);
-border:1px solid var(--line);border-radius:12px;overflow:hidden;}
-.metric{background:var(--surface);padding:10px 6px;text-align:center;cursor:pointer;}
-.metric:active{background:var(--surface2);}
-.metric .n{font-family:'Instrument Serif',serif;font-size:22px;line-height:1;}
-.metric .n.a{color:var(--amber);}.metric .n.g{color:var(--green);}.metric .n.d{color:var(--ink3);}
-.metric .l{font-family:'JetBrains Mono',monospace;font-size:7px;letter-spacing:.07em;
-text-transform:uppercase;color:var(--ink3);margin-top:5px;line-height:1.3;}
-.hint{font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--ink3);text-align:center;padding:6px 0 9px;}
-.hint b{color:var(--amber);font-weight:400;}
-.rail{display:flex;gap:7px;overflow-x:auto;padding:2px 18px 12px;scrollbar-width:none;background:var(--bg);flex:none;}
-.rail::-webkit-scrollbar{display:none;}
-.chip{flex:none;display:flex;align-items:center;gap:6px;padding:8px 13px;border-radius:30px;
-border:1px solid var(--line2);background:var(--surface);color:var(--ink2);font-size:12.5px;
-font-weight:600;white-space:nowrap;cursor:pointer;transition:all .2s;}
-.chip .ic{font-size:9px;opacity:.75;}
-.chip .ct{font-family:'JetBrains Mono',monospace;font-size:9px;opacity:.6;}
-.chip.off{opacity:.5;border-style:dashed;}
-.chip.on{background:var(--amber);border-color:var(--amber);color:#150E07;}
-.cathead{padding:13px 18px 11px;border-top:1px solid var(--line);background:var(--surface);
-display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex:none;}
-.cathead h2{font-family:'Instrument Serif',serif;font-size:21px;font-weight:400;line-height:1.05;}
-.cathead p{font-size:11.5px;color:var(--ink2);line-height:1.45;margin-top:5px;}
-.infobtn{flex:none;width:27px;height:27px;border-radius:50%;border:1px solid var(--line2);
-background:transparent;color:var(--ink2);font-family:'Instrument Serif',serif;font-size:14px;
-font-style:italic;cursor:pointer;display:grid;place-items:center;}
-.infobtn:active{background:var(--amber);color:#150E07;border-color:var(--amber);}
-.feed{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;}
-.card{padding:15px 18px;border-bottom:1px solid var(--line);animation:rise .4s cubic-bezier(.2,.7,.3,1) backwards;}
-@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
-.card:active{background:var(--surface);}
-.meta{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:8px;}
-.src{font-family:'JetBrains Mono',monospace;font-size:8.5px;letter-spacing:.09em;
-text-transform:uppercase;color:var(--amber);}
-.dot{width:2px;height:2px;border-radius:50%;background:var(--ink3);}
-.date{font-family:'JetBrains Mono',monospace;font-size:8.5px;color:var(--ink3);}
-.card h3{font-size:15px;font-weight:600;line-height:1.32;margin-bottom:6px;}
-.card p{font-size:12.5px;color:var(--ink2);line-height:1.5;}
-.readlink{display:inline-flex;gap:5px;margin-top:10px;font-family:'JetBrains Mono',monospace;
-font-size:9px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink3);
-text-decoration:none;border-bottom:1px solid var(--line2);padding-bottom:2px;}
-.readlink:active{color:var(--amber);border-color:var(--amber);}
-.op{border-left:2px solid var(--amberdim);}
-.fest{border-left:2px solid #3E5A72;}
-.fest .src{color:var(--blue);}
-.redir{border-left:2px solid var(--green);}
-.redir .src{color:var(--green);}
-.row{display:flex;gap:6px;flex-wrap:wrap;margin:9px 0 2px;}
-.tag{font-family:'JetBrains Mono',monospace;font-size:8.5px;padding:3.5px 7px;border-radius:4px;
-background:var(--surface2);color:var(--ink2);border:1px solid var(--line);}
-.tag.loc{color:var(--blue);border-color:#2A3A46;}
-.tag.dl{color:var(--amber);border-color:var(--amberdim);}
-.tag.urgent{color:#E8956A;border-color:#6E3320;background:#25140E;}
-.tag.fee{color:var(--green);border-color:#254028;}
-.trust{display:inline-flex;align-items:center;gap:5px;margin-top:10px;
-font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:.06em;
-text-transform:uppercase;color:var(--ink3);}
-.trust b{color:var(--ink2);font-weight:500;}
-.tdot{width:5px;height:5px;border-radius:50%;background:var(--blue);}
-.tdot.caution{background:var(--amber);}
-.more{margin:16px 18px 26px;padding:13px;border-radius:10px;border:1px solid var(--line2);
-background:var(--surface);color:var(--ink2);font-family:'JetBrains Mono',monospace;font-size:10px;
-letter-spacing:.12em;text-transform:uppercase;cursor:pointer;width:calc(100% - 36px);}
-.more:active{background:var(--amber);color:#150E07;border-color:var(--amber);}
-.endnote{font-size:11px;color:var(--ink3);line-height:1.5;padding:14px 18px 28px;
-text-align:center;border-top:1px solid var(--line);}
-.endnote b{color:var(--ink2);}
-.empty{padding:32px 22px;text-align:center;}
-.empty .ic{font-size:30px;color:var(--line2);margin-bottom:12px;}
-.empty h3{font-family:'Instrument Serif',serif;font-size:19px;font-weight:400;margin-bottom:9px;}
-.empty p{font-size:12.5px;color:var(--ink2);line-height:1.55;max-width:290px;margin:0 auto 16px;}
-.skel{padding:15px 18px;border-bottom:1px solid var(--line);}
-.skel div{height:11px;background:linear-gradient(90deg,var(--surface) 25%,var(--surface2) 50%,var(--surface) 75%);
-background-size:200% 100%;animation:sh 1.2s infinite;border-radius:4px;margin-bottom:8px;}
-@keyframes sh{0%{background-position:200% 0}100%{background-position:-200% 0}}
-.scrim{position:absolute;inset:0;background:rgba(4,3,2,.88);backdrop-filter:blur(7px);z-index:70;
-display:none;align-items:flex-end;}
-.scrim.open{display:flex;}
-.sheet{width:100%;background:var(--surface);border-top:1px solid var(--line2);
-border-radius:20px 20px 0 0;padding:9px 0 0;max-height:88%;display:flex;flex-direction:column;
-animation:slide .3s cubic-bezier(.2,.8,.3,1);}
-@keyframes slide{from{transform:translateY(100%)}to{transform:none}}
-.grip{width:34px;height:3px;border-radius:3px;background:var(--line2);margin:0 auto 14px;flex:none;}
-.sheetbody{overflow-y:auto;padding:0 20px 24px;}
-.sheet h3{font-family:'Instrument Serif',serif;font-size:22px;font-weight:400;margin-bottom:4px;}
-.sheet .sub{font-family:'JetBrains Mono',monospace;font-size:8.5px;letter-spacing:.1em;
-text-transform:uppercase;color:var(--amber);margin-bottom:15px;}
-.block{margin-bottom:17px;}
-.block .lb{font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:.11em;
-text-transform:uppercase;color:var(--ink3);margin-bottom:8px;}
-.block p{font-size:12.5px;color:var(--ink2);line-height:1.55;}
-.summary3{background:var(--surface2);border:1px solid var(--line);border-radius:10px;
-padding:12px 13px;margin-bottom:15px;}
-.summary3 p{font-size:11.5px;color:var(--ink2);line-height:1.5;margin-bottom:7px;}
-.summary3 p:last-child{margin-bottom:0;}
-.summary3 b{color:var(--ink);font-weight:600;}
-.kpi{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:15px;}
-.kpi>div{background:var(--surface2);border:1px solid var(--line);border-radius:9px;
-padding:10px 7px;text-align:center;}
-.kpi .v{font-family:'Instrument Serif',serif;font-size:19px;line-height:1;}
-.kpi .k{font-family:'JetBrains Mono',monospace;font-size:7px;letter-spacing:.07em;
-text-transform:uppercase;color:var(--ink3);margin-top:4px;}
-.statbar{display:flex;height:7px;border-radius:4px;overflow:hidden;margin:4px 0 9px;background:var(--surface2);}
-.legend{display:flex;gap:11px;flex-wrap:wrap;font-family:'JetBrains Mono',monospace;font-size:8px;
-letter-spacing:.05em;text-transform:uppercase;color:var(--ink3);}
-.legend span{display:inline-flex;align-items:center;gap:4px;}
-.lg{width:6px;height:6px;border-radius:2px;display:inline-block;}
-.srow{padding:12px 0;border-bottom:1px solid var(--line);}
-.srow:last-child{border-bottom:none;}
-.sname{font-size:13.5px;font-weight:600;display:flex;align-items:center;gap:7px;margin-bottom:7px;}
-.sdot{width:7px;height:7px;border-radius:50%;flex:none;}
-.sbadges{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px;}
-.sb{font-family:'JetBrains Mono',monospace;font-size:8px;padding:3px 6px;border-radius:4px;
-border:1px solid var(--line2);background:var(--surface2);white-space:nowrap;}
-.snote{font-size:11.5px;color:var(--ink2);line-height:1.48;}
-.whybox{background:#1E1611;border:1px solid #3A2C1C;border-left:2.5px solid var(--amber);
-border-radius:0 8px 8px 0;padding:9px 11px;}
-.whybox b{display:block;font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:.1em;
-color:var(--amber);margin-bottom:4px;}
-.whybox p{font-size:11.5px;color:var(--ink2);line-height:1.5;}
-.catgroup{margin-bottom:20px;}
-.catgroup h4{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.13em;
-text-transform:uppercase;color:var(--amber);padding-bottom:7px;border-bottom:1px solid var(--line2);
-margin-bottom:3px;display:flex;justify-content:space-between;align-items:baseline;}
-.catgroup h4 em{font-style:normal;color:var(--ink3);font-size:8.5px;}
-.closebar{flex:none;padding:11px 20px 20px;border-top:1px solid var(--line);background:var(--surface);}
-.closebtn{width:100%;padding:12px;border-radius:9px;border:1px solid var(--line2);
-background:transparent;color:var(--ink2);font-family:'JetBrains Mono',monospace;font-size:10px;
-letter-spacing:.13em;text-transform:uppercase;cursor:pointer;}
-.closebtn:active{background:var(--amber);color:#150E07;border-color:var(--amber);}
-.err{margin:20px 18px;padding:14px;border:1px solid #4A2620;background:#1E1210;border-radius:10px;}
-.err b{color:var(--red);font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.1em;
-display:block;margin-bottom:6px;}
-.err p{font-size:12px;color:var(--ink2);line-height:1.5;}
+:root{
+  --brand-900:#310A0A;--brand-800:#631414;--brand-700:#941E1E;--brand-600:#C62828;
+  --brand-500:#D45E5E;--brand-400:#E39494;--brand-200:#F0C9C9;--brand-100:#F7DFDF;
+  --orange-600:#BF7C45;--orange-400:#FFA55C;--orange-200:#FFD3AE;--orange-100:#FFF2E7;
+  --green-800:#156A4B;--green-600:#1F9F70;--green-300:#5DFDB0;--green-100:#DFF9EF;
+  --blue-900:#00223C;--blue-700:#006BB3;--blue-500:#0087EF;--blue-100:#E6F4FE;
+  --purple-900:#261D36;--purple-700:#7157A3;--purple-500:#9774D9;--purple-100:#F0EAF9;
+  --neutral-900:#333333;--neutral-800:#4D4D4D;--neutral-700:#666666;--neutral-600:#808080;
+  --neutral-500:#999999;--neutral-400:#B3B3B3;--neutral-300:#CCCCCC;--neutral-200:#E6E6E6;
+  --slate-900:#180E1B;--slate-700:#524A54;--slate-500:#8C878D;--slate-300:#C5C2C6;
+  --foundation-black:#000;--foundation-white:#fff;
+  --surface:#fff;--surface-subtle:#F7F7F7;--surface-muted:#F3F3F3;--line:#E6E6E6;
+  --text:#181818;--text-muted:#666;--text-soft:#8A8A8A;
+  --space-3xs:4px;--space-2xs:8px;--space-xs:16px;--space-s:24px;--space-m:32px;
+  --space-l:40px;--space-xl:48px;--space-2xl:64px;--space-3xl:80px;
+  --radius-none:0;--radius-2xs:4px;--radius-xs:8px;--radius-s:12px;--radius-m:16px;
+  --radius-l:20px;--radius-xl:24px;--radius-2xl:32px;--radius-3xl:40px;--radius-full:999px;
+  --border-s:1px;--border-m:2px;--border-l:4px;
+  --ai-gradient:linear-gradient(90deg,#25C9EC 0%,#A78BFA 35%,#E9A9D1 62%,#F9D99D 82%,#CDE99D 100%);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:#202020}
+body{font-family:'Geist','Open Sans',system-ui,sans-serif;color:var(--text);display:flex;justify-content:center}
+button,input{font:inherit}button,a{touch-action:manipulation}
+.app-shell{width:100%;max-width:430px;height:100dvh;background:var(--surface-muted);display:flex;flex-direction:column;position:relative;overflow:hidden}
+.app-header{z-index:20;flex:none;background:var(--surface);border-bottom:1px solid var(--line);padding:max(12px,env(safe-area-inset-top)) 16px 0}
+.topbar{height:52px;display:grid;grid-template-columns:1fr 48px 1fr;align-items:center}
+.inbox-button,.brand-button,.nav-button{border:0;background:transparent;color:inherit;cursor:pointer}
+.live-summary{justify-self:start;display:flex;align-items:center;gap:7px;min-width:0}.source-pulse{width:40px;height:40px;border-radius:50%;padding:2px;background:conic-gradient(#1F9F70 0 78%,#E6E6E6 78%)}
+.source-pulse span{width:100%;height:100%;display:grid;place-items:center;border:2px solid #fff;border-radius:50%;background:#E7F7F0;color:#156A4B}.source-pulse svg{width:17px;height:17px}
+.live-copy{min-width:0}.live-copy strong{display:block;color:var(--text);font-size:10px;line-height:1.1;white-space:nowrap}.live-copy span{display:block;font-size:8px;color:var(--text-muted);margin-top:2px;white-space:nowrap}
+.brand-button{justify-self:center;width:42px;height:42px;display:grid;place-items:center;text-decoration:none}.brand-glyph{position:relative;width:23px;height:25px;color:var(--brand-600)}
+.brand-glyph:before{content:"";position:absolute;left:1px;top:2px;width:19px;height:7px;background:currentColor;border-radius:2px 2px 1px 1px}.brand-glyph:after{content:"";position:absolute;left:8px;top:7px;width:9px;height:17px;background:currentColor;border-radius:0 0 2px 2px}
+.inbox-button{justify-self:end;width:40px;height:40px;display:grid;place-items:center;position:relative;border-radius:50%}.inbox-button:active{background:var(--surface-muted)}.inbox-button svg{width:24px;height:24px}
+.inbox-dot{position:absolute;right:5px;top:5px;width:6px;height:6px;border-radius:50%;background:#1F9F70;border:1.5px solid #fff}
+.search-wrap{height:40px;border:1px solid var(--neutral-300);border-radius:var(--radius-full);display:flex;align-items:center;gap:9px;padding:0 13px;margin:6px 0 12px;color:var(--neutral-500);background:#fff}
+.search-wrap:focus-within{border-color:var(--brand-500);box-shadow:0 0 0 3px var(--brand-100)}.search-wrap svg{width:17px;height:17px;flex:none}.search-wrap input{width:100%;border:0;outline:0;background:transparent;color:var(--text);font-size:12px}.search-wrap input::placeholder{color:var(--neutral-500)}
+.feed-tabs{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding:0 0 10px}.feed-tabs::-webkit-scrollbar{display:none}.filter-chip{flex:none;height:32px;padding:0 13px;border:0;border-radius:var(--radius-full);background:var(--surface-muted);color:var(--text-muted);font-size:11px;font-weight:600;cursor:pointer;position:relative;white-space:nowrap}
+.filter-chip.active{background:#fff;color:var(--text)}.filter-chip.active:after{content:"";position:absolute;height:2px;border-radius:2px;background:var(--brand-600);left:12px;right:12px;bottom:-10px}
+.feed{flex:1;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:8px 0 24px;scrollbar-width:none}.feed::-webkit-scrollbar{display:none}
+.feed-card{background:var(--surface-subtle);border:1px solid transparent;border-radius:var(--radius-s);margin:0 6px 8px;overflow:hidden;animation:card-in .32s ease both}@keyframes card-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.feed-card.opportunity{background:#fff;border-color:#E7C5A4}.feed-card.official{border-color:#D7E6DB}.card-inner{padding:14px 13px 12px}
+.author-row{display:flex;align-items:center;gap:9px;margin-bottom:12px}.source-avatar{width:34px;height:34px;flex:none;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:700;font-size:11px;border:1px solid rgba(0,0,0,.06)}
+.author-copy{min-width:0;flex:1}.author-name{font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:4px}.verified{width:12px;height:12px;border-radius:50%;display:inline-grid;place-items:center;background:#20B878;color:#fff;font-size:8px}.author-meta{margin-top:2px;font-family:'Open Sans',sans-serif;color:var(--text-soft);font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.menu-button{width:30px;height:30px;display:grid;place-items:center;border:0;background:transparent;border-radius:50%;color:var(--neutral-700);cursor:pointer}.menu-button svg{width:18px;height:18px}.menu-button:active{background:#ECECEC}
+.post-label{display:inline-flex;align-items:center;gap:5px;min-height:18px;padding:3px 7px;border-radius:var(--radius-full);background:#EAEAEA;color:#666;font-size:8px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;margin-bottom:8px}.post-label.audition{background:#F6E5D2;color:#9B683A}.post-label.opportunity{background:#FBE4E5;color:#D45E5E}.post-label.festival{background:#E4F2FC;color:#006BB3}.post-label.grant{background:var(--purple-100);color:var(--purple-700)}.post-label.team{background:var(--purple-100);color:var(--purple-700)}.post-label.details{background:#FFF1E8;color:#8E4D28}
+.post-title{font-size:13px;line-height:1.4;font-weight:650;margin-bottom:7px}.post-description{font-family:'Open Sans',sans-serif;font-size:11px;line-height:1.55;color:#333;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:5;overflow:hidden}
+.fact-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:12px 0 2px}.fact{display:inline-flex;align-items:center;gap:4px;color:var(--text-muted);font-size:9px}.fact+.fact:before{content:"";width:3px;height:3px;border-radius:50%;background:#C8C8C8;margin-right:3px}.fact svg{width:14px;height:14px;color:#666}
+.trust-note{margin-top:11px;padding:8px 9px;border-radius:var(--radius-xs);background:#F1F1F1;color:#717171;font-family:'Open Sans',sans-serif;font-size:9px;line-height:1.45}.trust-note.caution{background:#FFF1E8;color:#8E4D28}.trust-note strong{color:#3F3F3F}
+.cta-frame{padding:1.5px;border-radius:var(--radius-full);background:var(--ai-gradient);margin-top:13px}.primary-cta{height:40px;border-radius:var(--radius-full);background:#1F1F1F;color:#fff;text-decoration:none;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:650}.primary-cta:active{background:#000;transform:translateY(1px)}.primary-cta.muted{background:#5B5B5B;cursor:default}
+.card-actions{border-top:1px solid #E3E3E3;display:flex;align-items:center;padding:8px 13px 9px;gap:7px}.action-button{height:30px;min-width:30px;padding:0 5px;border:0;background:transparent;color:#666;display:flex;align-items:center;justify-content:center;gap:5px;border-radius:8px;cursor:pointer;font-size:9px;text-decoration:none}.action-button svg{width:18px;height:18px}.action-button:active{background:#EAEAEA}.action-button.source-action{margin-right:auto;padding-left:0}.action-button.saved{color:var(--brand-600)}
+.skeleton{height:150px;margin:0 6px 8px;border-radius:var(--radius-s);background:linear-gradient(90deg,#F1F1F1 25%,#FAFAFA 50%,#F1F1F1 75%);background-size:200% 100%;animation:shimmer 1.2s infinite}@keyframes shimmer{to{background-position:-200% 0}}
+.empty,.error-card{margin:18px 16px;padding:28px 20px;border:1px solid var(--line);border-radius:var(--radius-m);text-align:center;background:#fff}.empty h2,.error-card h2{font-size:17px;margin-bottom:7px}.empty p,.error-card p{font-family:'Open Sans',sans-serif;font-size:11px;line-height:1.55;color:var(--text-muted)}
+.load-more{height:42px;width:calc(100% - 32px);margin:8px 16px 12px;border:1px solid var(--neutral-300);border-radius:var(--radius-full);background:#fff;color:#444;font-weight:600;font-size:11px;cursor:pointer}.load-more:active{background:#F2F2F2}.end-note{text-align:center;color:#999;font-size:10px;padding:18px 16px 8px}
+.bottom-nav{height:64px;padding:6px 4px max(6px,env(safe-area-inset-bottom));flex:none;display:grid;grid-template-columns:repeat(5,1fr);background:#202020;color:#8E8E8E;border-radius:14px 14px 0 0;z-index:25}.nav-button{min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:inherit;font-size:8px;position:relative}.nav-button svg{width:19px;height:19px}.nav-button.active{color:var(--brand-500)}.nav-button.create svg{width:23px;height:23px}.notification-mark{position:absolute;width:5px;height:5px;border-radius:50%;background:var(--brand-600);top:4px;right:22px}
+.toast{position:absolute;z-index:100;left:16px;right:16px;bottom:76px;background:#202020;color:#fff;padding:11px 14px;border-radius:var(--radius-s);font-size:11px;line-height:1.45;box-shadow:0 8px 30px rgba(0,0,0,.24);opacity:0;transform:translateY(8px);pointer-events:none;transition:.2s}.toast.show{opacity:1;transform:none}
+.scrim{position:absolute;inset:0;z-index:80;background:rgba(0,0,0,.42);display:none;align-items:flex-end}.scrim.open{display:flex}.sheet{width:100%;max-height:82%;display:flex;flex-direction:column;background:#fff;border-radius:24px 24px 0 0;animation:sheet-up .25s ease}@keyframes sheet-up{from{transform:translateY(100%)}to{transform:none}}
+.grip{width:38px;height:4px;background:#D9D9D9;border-radius:4px;margin:9px auto 13px}.sheet-body{overflow-y:auto;padding:0 18px 20px}.sheet-body h2{font-size:20px;margin-bottom:3px}.sheet-sub{font-size:10px;color:#888;margin-bottom:18px}.source-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px}.source-kpi{background:#F5F5F5;border-radius:10px;padding:11px;text-align:center}.source-kpi strong{display:block;font-size:18px}.source-kpi span{font-size:8px;color:#777;text-transform:uppercase;letter-spacing:.06em}.source-row{display:flex;align-items:center;gap:9px;padding:10px 0;border-bottom:1px solid #EEE}.status-dot{width:8px;height:8px;border-radius:50%;flex:none}.source-row-copy{min-width:0;flex:1}.source-row-copy strong{display:block;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.source-row-copy span{font-size:9px;color:#888}.sheet-close{height:46px;margin:8px 18px max(14px,env(safe-area-inset-bottom));border:0;border-radius:var(--radius-full);background:#202020;color:#fff;font-size:11px;font-weight:650;cursor:pointer}
+@media(min-width:700px){body{padding:24px}.app-shell{height:calc(100dvh - 48px);max-height:920px;border-radius:24px;box-shadow:0 30px 90px rgba(0,0,0,.45)}.bottom-nav{border-radius:14px 14px 24px 24px}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 </style>
 </head>
 <body>
-<div class="shell"><div class="grain"></div>
-<header>
-  <div class="brandrow">
-    <div class="brand">TRIB<span>L</span>I</div>
-    <div class="livebadge"><span class="pulse"></span><span id="livetxt">Live API</span></div>
-  </div>
-  <div class="metrics">
-    <div class="metric" data-m="sources"><div class="n" id="m1">–</div><div class="l">Sources<br>Mapped</div></div>
-    <div class="metric" data-m="live"><div class="n g" id="m2">–</div><div class="l">Feeding<br>Now</div></div>
-    <div class="metric" data-m="items"><div class="n a" id="m3">–</div><div class="l">Live<br>Items</div></div>
-    <div class="metric" data-m="cost"><div class="n d" id="m4">$0</div><div class="l">Spend<br>To Date</div></div>
-  </div>
-  <div class="hint">Tap any number — <b>full source intelligence</b></div>
-</header>
-<div class="rail" id="rail"></div>
-<div class="cathead" id="cathead"></div>
-<div class="feed" id="feed"></div>
+<div class="app-shell">
+  <header class="app-header">
+    <div class="topbar">
+      <div class="live-summary" aria-live="polite"><span class="source-pulse"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12h3l2-5 4 10 2-5h5" stroke-linecap="round" stroke-linejoin="round"/></svg></span></span><span class="live-copy"><strong id="liveTitle">Live feed</strong><span id="liveMeta">Checking sources…</span></span></div>
+      <a class="brand-button" href="/" aria-label="TRIBLI home"><span class="brand-glyph"></span></a>
+      <button class="inbox-button" id="statusBtn" type="button" aria-label="Source status"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><ellipse cx="12" cy="5.5" rx="6.5" ry="2.5"/><path d="M5.5 5.5v6c0 1.4 2.9 2.5 6.5 2.5s6.5-1.1 6.5-2.5v-6M5.5 11.5v6c0 1.4 2.9 2.5 6.5 2.5s6.5-1.1 6.5-2.5v-6"/></svg><span class="inbox-dot"></span></button>
+    </div>
+    <label class="search-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4" stroke-linecap="round"/></svg><input id="search" type="search" autocomplete="off" placeholder="Search opportunities, calls, sources and places…" aria-label="Search feed"></label>
+    <nav class="feed-tabs" id="rail" aria-label="Feed filters"></nav>
+  </header>
+  <main class="feed" id="feed" aria-live="polite"></main>
+  <nav class="bottom-nav" aria-label="Primary navigation">
+    <button class="nav-button active" type="button" data-nav="browse" aria-label="All live feeds"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M8 9h8M8 13h6M8 17h4" stroke-linecap="round"/></svg><span>All feeds</span></button>
+    <button class="nav-button" type="button" data-nav="casting" aria-label="Opportunities"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 8h16v11H4z"/><path d="M9 8V5h6v3M4 12h16"/></svg><span>Opportunities</span></button>
+    <button class="nav-button" type="button" data-nav="festivals" aria-label="Festivals"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 20V10l7-5 7 5v10M9 20v-5h6v5M8 11h.01M16 11h.01" stroke-linecap="round"/></svg><span>Festivals</span></button>
+    <button class="nav-button" type="button" data-nav="grants" aria-label="Grants and labs"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 4 4 8l8 4 8-4-8-4ZM6 11v5c0 1.7 2.7 3 6 3s6-1.3 6-3v-5" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Grants</span></button>
+    <button class="nav-button create" type="button" data-nav="share" aria-label="Share to TRIBLI"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8" stroke-linecap="round"/></svg><span>Share</span></button>
+  </nav>
+  <div class="toast" id="toast" role="status"></div>
+  <div class="scrim" id="scrim" aria-hidden="true"><section class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle"><div class="grip"></div><div class="sheet-body" id="sheetbody"></div><button class="sheet-close" type="button" id="sheetClose">Close</button></section></div>
 </div>
-<div class="scrim" id="scrim"><div class="sheet"><div class="grip"></div>
-<div class="sheetbody" id="sheetbody"></div>
-<div class="closebar"><button class="closebtn" onclick="closeSheet()">Close</button></div>
-</div></div>
-
 <script>
-const API = location.origin;
-const PAGE = 30;
-const el = s => document.querySelector(s);
-const esc = s => (s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-
-const CATCOPY = {
-  all:{why:"A blended view across every live category, with sources interleaved so no single outlet dominates."},
-  casting:{why:"Open crew calls, auditions and paid roles. The highest-value category and the reason most people open the app."},
-  telugu:{why:"Tollywood-first, not Tollywood-only. A Telugu actor takes a Tamil or Malayalam role if it's good."},
-  festivals:{why:"Festival calls-for-entry with live deadlines and entry fees — only windows that are still open."},
-  tech:{why:"Cameras, lenses, editing, colour, VFX and virtual production. Global by design."},
-  ai:{why:"The fastest-moving area affecting working filmmakers. Separated because it changes weekly."},
-  trade:{why:"Production and commissioning signal — the news that predicts hiring. Filtered against box office and gossip."},
-  education:{why:"Workshops, admissions, masterclasses and training."},
-  grants:{why:"Funding, labs, fellowships and residencies."},
-  unions:{why:"Wage revisions, strikes, rate cards and union notices."},
-  aggregator:{why:"Directories and meta-sources used to discover new feeds."},
+const API=location.origin,PAGE=30,$=s=>document.querySelector(s);
+const esc=s=>String(s||'').replace(/[&<>\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const icons={
+ pin:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21s6-5.4 6-11a6 6 0 1 0-12 0c0 5.6 6 11 6 11Z"/><circle cx="12" cy="10" r="2"/></svg>',
+ calendar:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 10h16"/></svg>',
+ link:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 13a5 5 0 0 0 7.5.5l2-2a5 5 0 0 0-7-7l-1.1 1.1M14 11a5 5 0 0 0-7.5-.5l-2 2a5 5 0 0 0 7 7l1.1-1.1"/></svg>',
+ share:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="m8.3 10.8 7.4-4.5M8.3 13.2l7.4 4.5"/></svg>',
+ save:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 4h12v17l-6-4-6 4V4Z"/></svg>',
+ more:'<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg>'
 };
-const STATUS={
- ok:{c:"var(--green)",l:"Feeding now",d:"Pulling live data into the feed right now."},
- empty:{c:"var(--blue)",l:"No new items",d:"Reachable and healthy, but the feed returned nothing this run."},
- blocked:{c:"var(--red)",l:"Blocked",d:"Refuses automated access, or is paywalled."},
- error:{c:"var(--red)",l:"Error",d:"Failed on the last run."},
- nofeed:{c:"var(--ink3)",l:"No feed",d:"Checked — no API or RSS exists. Needs a human."},
- untested:{c:"var(--purple)",l:"Untested",d:"Not probed yet. Status genuinely unknown."},
- rejected:{c:"var(--ink3)",l:"Rejected",d:"Works, but the content fails our editorial policy."},
- pending:{c:"var(--ink3)",l:"Pending",d:"Configured but not yet run."},
- skipped:{c:"var(--ink3)",l:"Skipped",d:"Not due for refresh this run."},
- watch:{c:"var(--purple)",l:"Watching",d:"No public permalink or feed yet. Not a card."},
-};
-
-let cats=[], active="all", items=[], total=0, offset=0, srcData=null, loading=false;
-
-async function api(path){
-  const r = await fetch(API+path);
-  if(!r.ok) throw new Error("API "+r.status);
-  return r.json();
-}
-function ago(d){if(!d)return"";const t=new Date(d);if(isNaN(t))return"";
- const n=Math.floor((Date.now()-t)/864e5);
- return n<=0?"today":n===1?"1d ago":n<30?n+"d ago":Math.floor(n/30)+"mo ago";}
-function dlTag(d){if(!d)return"";const t=new Date(d);if(isNaN(t))return"";
- const n=Math.ceil((t-Date.now())/864e5);
- if(n<0)return'<span class="tag">closed</span>';
- if(n===0)return'<span class="tag urgent">closes today</span>';
- if(n<=7)return`<span class="tag urgent">${n} day${n>1?"s":""} left</span>`;
- if(n<400)return`<span class="tag dl">${n} days left</span>`;return"";}
-
-async function boot(){
-  try{
-    const [c,h,s] = await Promise.all([
-      api("/api/categories"), api("/api/health"), api("/api/sources")]);
-    cats = c.categories; srcData = s;
-    el("#m1").textContent = s.totals.mapped;
-    el("#m2").textContent = s.totals.feeding;
-    el("#m3").textContent = h.items.active;
-    el("#livetxt").textContent = "Live API";
-    renderRail(); renderHead(); loadFeed(true);
-  }catch(e){
-    el("#feed").innerHTML = `<div class="err"><b>Cannot reach the API</b>
-      <p>The backend isn't responding at <code>${esc(API)}</code>.
-      Start it with <code>python run.py</code>, then reload.</p></div>`;
-    el("#livetxt").textContent = "Offline";
-    document.querySelector(".pulse").style.background="var(--red)";
-  }
-}
-
-function renderRail(){
-  const all = [{id:"all",label:"For You",icon:"◆",count:null}].concat(cats);
-  el("#rail").innerHTML = all.map(c=>{
-    const dead = c.id!=="all" && c.count===0;
-    return `<div class="chip ${c.id===active?"on":""} ${dead?"off":""}" data-c="${c.id}">
-      <span class="ic">${c.icon||"◆"}</span>${esc(c.label)}${
-      c.count!==null&&c.count!==undefined?`<span class="ct">${c.count}</span>`:""}</div>`;
-  }).join("");
-  el("#rail").querySelectorAll(".chip").forEach(ch=>ch.onclick=()=>{
-    active=ch.dataset.c; offset=0; renderRail(); renderHead(); loadFeed(true);
-    el("#feed").scrollTop=0;});
-  const on=el("#rail").querySelector(".chip.on");
-  if(on) on.scrollIntoView({behavior:"smooth",block:"nearest",inline:"center"});
-}
-
-function catObj(){ return cats.find(c=>c.id===active) || {id:"all",label:"For You",icon:"◆"}; }
-
-function renderHead(){
-  const c=catObj(), copy=CATCOPY[active]||{why:""};
-  el("#cathead").innerHTML=`<div><h2>${esc(c.label||"For You")}</h2>
-    <p>${esc(copy.why)}</p></div><button class="infobtn" id="ib">i</button>`;
-  el("#ib").onclick=()=>catSheet();
-}
-
-async function loadFeed(reset){
-  if(loading) return; loading=true;
-  if(reset){ offset=0; items=[];
-    el("#feed").innerHTML = Array(4).fill(
-      '<div class="skel"><div style="width:35%"></div><div style="width:88%"></div><div style="width:70%"></div></div>').join("");
-  }
-  try{
-    const d = await api(`/api/feed?category=${encodeURIComponent(active)}&limit=${PAGE}&offset=${offset}`);
-    total = d.total; items = reset ? d.items : items.concat(d.items);
-    renderFeed();
-  }catch(e){
-    el("#feed").innerHTML = `<div class="err"><b>Failed to load</b><p>${esc(e.message)}</p></div>`;
-  }
-  loading=false;
-}
-
-function ctaLabel(it){
-  if(it.display_mode==="redirect"){
-    const pub = it.publisher || it.source || "source";
-    if(it.kind==="festival") return `Submit on ${pub} ↗`;
-    if(it.category==="grants") return `Apply on ${pub} ↗`;
-    return `Open ${pub} ↗`;
-  }
-  if(it.kind==="festival") return "Submission page ↗";
-  if(it.kind==="opportunity") return "Open source ↗";
-  return "Read at source ↗";
-}
-function cardHTML(it,i){
-  const delay=`style="animation-delay:${Math.min(i%PAGE,14)*20}ms"`;
-  const kind = it.kind;
-  const redir = it.display_mode==="redirect";
-  const cls = `${redir?"redir":""} ${kind==="opportunity"?"op":kind==="festival"?"fest":""}`.trim();
-  const caution = it.trust==="caution";
-  const reasons = Array.isArray(it.trust_reasons)?it.trust_reasons:[];
-  const cautionLine = kind==="opportunity" && !redir
-    ? `<div class="trust"><span class="tdot ${caution?"caution":""}"></span>${
-        caution?`Flagged &middot; <b>review before applying</b>${
-          reasons.length?`<br>${esc(reasons[0])}`:""}`
-        :"External listing &middot; <b>not yet TRIBLI-verified</b>"}</div>`
-    : (redir?`<div class="trust"><span class="tdot"></span>Official page &middot; <b>opens ${esc(it.publisher||it.source)} — leaves TRIBLI</b></div>`:"");
-  if(kind==="opportunity" || (redir && kind!=="festival")){
-    return `<div class="card ${cls}" ${delay}>
-      <div class="meta"><span class="src">${esc(it.source)}</span><span class="dot"></span>
-        <span class="date">${ago(it.posted_at)||ago(it.verified_at)}</span></div>
-      <h3>${esc(it.title)}</h3>${it.description?`<p>${esc(it.description)}</p>`:""}
-      <div class="row">${it.location?`<span class="tag loc">${esc(it.location)}</span>`:""}
-        ${it.org?`<span class="tag">${esc(it.org)}</span>`:""}
-        ${it.employment_type?`<span class="tag">${esc(it.employment_type)}</span>`:""}
-        ${dlTag(it.deadline)}</div>
-      ${cautionLine}<br>
-      <a class="readlink" href="${esc(it.link)}" target="_blank" rel="noopener">${esc(ctaLabel(it))}</a></div>`;
-  }
-  if(kind==="festival"){
-    return `<div class="card ${cls||"fest"}" ${delay}>
-      <div class="meta"><span class="src">${esc(it.source)}</span><span class="dot"></span>
-        <span class="date">${it.region_tier==="india"?"India":"International"}</span></div>
-      <h3>${esc(it.title)}</h3>${it.description?`<p>${esc(it.description)}</p>`:""}
-      <div class="row">${it.location?`<span class="tag loc">${esc(it.location)}</span>`:""}
-        ${it.fee?`<span class="tag fee">${esc(it.fee)}</span>`:""}${dlTag(it.deadline)}</div>
-      ${redir?cautionLine+"<br>":""}
-      <a class="readlink" href="${esc(it.link)}" target="_blank" rel="noopener">${esc(ctaLabel(it))}</a></div>`;
-  }
-  if(redir){
-    return `<div class="card redir" ${delay}>
-      <div class="meta"><span class="src">${esc(it.source)}</span><span class="dot"></span>
-        <span class="date">${ago(it.verified_at)||ago(it.posted_at)}</span></div>
-      <h3>${esc(it.title)}</h3>${it.description?`<p>${esc(it.description)}</p>`:""}
-      <div class="row">${it.org?`<span class="tag">${esc(it.org)}</span>`:""}${dlTag(it.deadline)}</div>
-      ${cautionLine}<br>
-      <a class="readlink" href="${esc(it.link)}" target="_blank" rel="noopener">${esc(ctaLabel(it))}</a></div>`;
-  }
-  return `<div class="card" ${delay}>
-    <div class="meta"><span class="src">${esc(it.source)}</span><span class="dot"></span>
-      <span class="date">${ago(it.posted_at)}</span></div>
-    <h3>${esc(it.title)}</h3>${it.description?`<p>${esc(it.description)}</p>`:""}
-    <a class="readlink" href="${esc(it.link)}" target="_blank" rel="noopener">Read at source ↗</a></div>`;
-}
-
-function renderFeed(){
-  const c=catObj();
-  if(!items.length){
-    el("#feed").innerHTML=`<div class="empty"><div class="ic">${c.icon||"◆"}</div>
-      <h3>Nothing feeding here yet</h3><p>${esc((CATCOPY[active]||{}).why||"")}</p>
-      <div class="whybox" style="text-align:left;max-width:320px;margin:0 auto">
-      <b>Why</b><p>No configured source for this category is returning items.
-      Open the source panel to see exactly which sources were checked and what each one returned.</p></div></div>`;
-    return;
-  }
-  el("#feed").innerHTML = items.map(cardHTML).join("") +
-    (items.length<total
-      ? `<button class="more" id="more">Load ${Math.min(PAGE,total-items.length)} more &nbsp;·&nbsp; ${items.length} of ${total}</button>`
-      : `<div class="endnote">You've reached the end.<br><b>${total} live items</b> · served by the TRIBLI API</div>`);
-  const m=el("#more");
-  if(m) m.onclick=()=>{ offset=items.length; loadFeed(false); };
-}
-
-/* ---------------- sheets ---------------- */
-function statBar(rows){
-  const t=rows.length||1, seg={};
-  rows.forEach(r=>{seg[r.status]=(seg[r.status]||0)+1;});
-  return `<div class="statbar">${Object.entries(seg).map(([k,v])=>
-    `<i style="display:block;width:${v/t*100}%;background:${(STATUS[k]||STATUS.pending).c}"></i>`).join("")}</div>
-    <div class="legend">${Object.entries(seg).map(([k,v])=>
-    `<span><i class="lg" style="background:${(STATUS[k]||STATUS.pending).c}"></i>${(STATUS[k]||STATUS.pending).l} ${v}</span>`).join("")}</div>`;
-}
-function acqBadge(s){
-  const a=s.acquisition;
-  if(a==="full") return `<span class="sb">full ingest</span>`;
-  if(a==="redirect") return `<span class="sb">redirect-only</span>`;
-  if(a==="watch") return `<span class="sb">watching</span>`;
-  if(a==="rejected") return `<span class="sb">rejected for quality</span>`;
-  return a?`<span class="sb">${esc(a)}</span>`:"";
-}
-function srcRowLive(s){
-  const S=STATUS[s.status]||STATUS.pending;
-  const isOk = s.status==="ok";
-  return `<div class="srow">
-    <div class="sname"><span class="sdot" style="background:${S.c}"></span>${esc(s.name)}</div>
-    <div class="sbadges">
-      <span class="sb" style="color:${S.c};border-color:${S.c}33">${S.l}${isOk&&s.items?` · ${s.items} items`:""}</span>
-      <span class="sb">${esc(s.kind)}</span>${acqBadge(s)}
-    </div>
-    ${isOk
-      ? (s.note?`<div class="snote">${esc(s.note)}</div>`:"")
-      : `<div class="whybox"><b>WHY THIS ISN'T LIVE</b><p>${esc(s.detail||S.d)}</p></div>`}
-  </div>`;
-}
-function srcRowDead(s){
-  const S=STATUS[s.status]||STATUS.pending;
-  return `<div class="srow">
-    <div class="sname"><span class="sdot" style="background:${S.c}"></span>${esc(s.name)}</div>
-    <div class="sbadges"><span class="sb" style="color:${S.c};border-color:${S.c}33">${S.l}</span>${acqBadge(s)}</div>
-    <div class="whybox"><b>WHY THIS ISN'T LIVE</b><p>${esc(s.reason)}</p></div></div>`;
-}
-
-function catSheet(){
-  if(active==="all") return metricSheet("sources");
-  const live=(srcData.ingesting||[]).filter(s=>s.category===active);
-  const dead=(srcData.not_ingesting||[]).filter(s=>s.category===active);
-  const c=catObj(), copy=CATCOPY[active]||{};
-  el("#sheetbody").innerHTML=`<h3>${esc(c.label)}</h3>
-    <div class="sub">${total} items in feed</div>
-    <div class="block"><div class="lb">Why this category exists</div><p>${esc(copy.why||"")}</p></div>
-    ${live.length?`<div class="block"><div class="lb">Configured sources — ${live.length}</div>
-      ${statBar(live)}<div style="margin-top:11px">${live.map(srcRowLive).join("")}</div></div>`:""}
-    ${dead.length?`<div class="block"><div class="lb">Checked, not ingesting — ${dead.length}</div>
-      ${dead.map(srcRowDead).join("")}</div>`:""}`;
-  el("#scrim").classList.add("open");
-}
-
-function metricSheet(kind){
-  const t=srcData.totals, live=srcData.ingesting||[], dead=srcData.not_ingesting||[];
-  let h="";
-  if(kind==="sources"||kind==="live"){
-    const byCat={};
-    live.forEach(s=>(byCat[s.category]=byCat[s.category]||{live:[],dead:[]}).live.push(s));
-    dead.forEach(s=>{(byCat[s.category]=byCat[s.category]||{live:[],dead:[]}).dead.push(s);});
-    h=`<h3>Source intelligence</h3><div class="sub">Live from the ingestion database</div>
-    <div class="summary3">
-      <p>&#9656; Mapped <b>${t.mapped} real sources</b> across 10 categories — casting, festivals, craft, grants, unions and more.</p>
-      <p>&#9656; <b>${t.feeding} are feeding right now</b>, scraped by the backend on a schedule — not a frozen snapshot.</p>
-      <p>&#9656; Acquisition is <b>full ingest</b> when we store the listing, <b>redirect-only</b> when we card a verified official permalink (the tap leaves TRIBLI), <b>watching</b> until a public per-post URL exists, or <b>rejected for quality</b>. Blocked sources stay listed with the HTTP/robots reason.</p>
-      <p>&#9656; The rest aren't hidden — each one below says exactly what happened when we checked it.</p>
-    </div>
-    <div class="kpi"><div><div class="v">${t.mapped}</div><div class="k">Mapped</div></div>
-      <div><div class="v" style="color:var(--green)">${t.feeding}</div><div class="k">Feeding</div></div>
-      <div><div class="v" style="color:var(--amber)">$0</div><div class="k">Spent</div></div></div>
-    <div class="block">${statBar(live)}</div>
-    ${Object.entries(byCat).map(([cid,g])=>{
-      const label=(cats.find(c=>c.id===cid)||{}).label||cid;
-      return `<div class="catgroup"><h4>${esc(label)}<em>${g.live.filter(s=>s.status==="ok").length} feeding · ${g.live.length+g.dead.length} mapped</em></h4>
-        ${g.live.map(srcRowLive).join("")}${g.dead.map(srcRowDead).join("")}</div>`;}).join("")}`;
-  }
-  if(kind==="items"){
-    h=`<h3>Live items</h3><div class="sub">Served from the ingestion database</div>
-    <div class="block"><p>Every item was scraped by the backend, de-duplicated by content fingerprint,
-    filtered for editorial policy, and scored for scam patterns before being stored.
-    Nothing here is sample data.</p></div>
-    <div class="block"><div class="lb">Safety filtering</div>
-    <p>Listings that demand payment from applicants, or request identity and bank documents up front,
-    are <b>never stored</b>. Listings matching exploitation-risk patterns are quarantined for human
-    review rather than shown. No listing is ever auto-marked as TRIBLI-verified.</p></div>`;
-  }
-  if(kind==="cost"){
-    h=`<h3>Spend to date</h3><div class="sub">What this pipeline costs to run</div>
-    <div class="kpi"><div><div class="v" style="color:var(--green)">$0</div><div class="k">Spent</div></div>
-      <div><div class="v">${t.configured}</div><div class="k">Configured</div></div>
-      <div><div class="v" style="color:var(--amber)">1</div><div class="k">Paid API</div></div></div>
-    <div class="block"><p>Every source is free or on a free tier. Festival API is the only paid
-    product in the pipeline and its free tier covers this build entirely — 50 credits on signup,
-    then $20 for 2,000 searches if you outgrow it.</p></div>`;
-  }
-  el("#sheetbody").innerHTML=h;
-  el("#scrim").classList.add("open");
-}
-function closeSheet(){el("#scrim").classList.remove("open");}
-el("#scrim").onclick=e=>{if(e.target.id==="scrim")closeSheet();};
-document.querySelectorAll(".metric").forEach(m=>m.onclick=()=>{
-  if(srcData) metricSheet(m.dataset.m);});
-boot();
+const categoryOrder=['casting','telugu','festivals','grants','tech','ai','trade','education'];
+const categoryLabels={casting:'Opportunities',telugu:'South',festivals:'Festivals',grants:'Grants & Labs',tech:'Craft & Tech',ai:'AI in Film',trade:'Industry',education:'Learn'};
+let tabModel=[{id:'all',label:'Latest'}];
+let cats=[],active='all',items=[],total=0,offset=0,srcData=null,loading=false,query='';
+async function api(path){const r=await fetch(API+path);if(!r.ok)throw new Error('API '+r.status);return r.json()}
+function ago(d){if(!d)return'';const t=new Date(d);if(isNaN(t))return'';const n=Math.floor((Date.now()-t)/864e5);return n<=0?'few mins ago':n===1?'1d ago':n<30?n+'d ago':Math.floor(n/30)+'mo ago'}
+function daysLeft(d){if(!d)return'';const t=new Date(d);if(isNaN(t))return'';const n=Math.ceil((t-Date.now())/864e5);if(n<0)return'Closed';if(n===0)return'Closes today';return n+' day'+(n===1?'':'s')+' left'}
+function initials(s){return String(s||'TRIBLI').trim().split(/\s+/).slice(0,2).map(x=>x[0]).join('').toUpperCase()||'T'}
+function avatarColor(s){const palette=['#C62828','#156A4B','#006BB3','#7157A3','#BF7C45','#524A54'];let n=0;for(const c of String(s||''))n=(n+c.charCodeAt(0))%997;return palette[n%palette.length]}
+function publisher(it){return it.publisher||it.org||it.source||'TRIBLI source'}
+function roleLine(it){if(it.kind==='festival')return'Festival organisation';if(it.kind==='opportunity')return it.org||'Production source';return({tech:'Film craft',ai:'AI in film',trade:'Industry update',education:'Learning',grants:'Funding source',telugu:'South industry'}[it.category]||'Film community')}
+function hrefFor(it){const u=it.apply_url||it.link||'';return/^(https?:\/\/|mailto:|tel:)/i.test(u)?u:''}
+function ctaLabel(it){if(it.apply_method==='team_review')return'Contact details needed';if(it.apply_method==='whatsapp')return'Apply via WhatsApp';if(it.apply_method==='phone')return'Call coordinator';if(it.apply_method==='email')return'Email application';if(it.acquisition_mode==='shared'&&(it.display_mode==='redirect'||it.apply_method==='web'))return'View external post';if(it.kind==='festival')return'Submission page';if(it.kind==='opportunity')return'View Opportunity';return'Read at source'}
+function labelFor(it){if(it.apply_method==='team_review')return{label:'NEEDS DETAILS',cls:'details'};if(it.acquisition_mode==='shared')return{label:'TEAM SHARE',cls:'team'};if(it.kind==='festival')return{label:'FESTIVAL',cls:'festival'};if(it.category==='grants')return{label:'GRANT & LAB',cls:'grant'};if(it.kind==='opportunity'||it.display_mode==='redirect'){const audition=/audition|actor|actress|casting|talent/i.test([it.title,it.employment_type,it.description].join(' '));return{label:audition?'AUDITION':'OPPORTUNITY',cls:audition?'audition':'opportunity'}}return{label:it.category==='trade'?'UPDATE':it.category==='tech'?'CRAFT':it.category==='ai'?'AI & FILM':'UPDATE',cls:''}}
+function trustHTML(it){if(it.apply_method==='team_review')return'<div class="trust-note caution"><strong>Saved from your team.</strong> No direct contact was included. Ask the teammate who shared this post before applying.</div>';if(it.acquisition_mode==='shared'){const extra=(it.apply_method==='whatsapp'||it.apply_method==='phone')?' Coordinator not verified.':'';return'<div class="trust-note"><strong>Shared from WhatsApp</strong> · External source · not TRIBLI-verified.'+extra+'</div>'}if(it.trust==='caution'){const reasons=Array.isArray(it.trust_reasons)?it.trust_reasons:[];return'<div class="trust-note caution"><strong>Review before applying.</strong> '+esc(reasons[0]||'This listing needs extra care.')+'</div>'}if(it.kind==='opportunity'&&it.display_mode!=='redirect')return'<div class="trust-note">External listing · <strong>not yet TRIBLI-verified</strong></div>';return''}
+function fact(icon,text){return text?'<span class="fact">'+icons[icon]+esc(text)+'</span>':''}
+function cardHTML(it,i){const name=publisher(it),link=hrefFor(it),tag=labelFor(it),isOpp=it.kind==='opportunity'||it.kind==='festival'||it.display_mode==='redirect',needsDetails=it.apply_method==='team_review',role=roleLine(it),when=ago(it.posted_at)||ago(it.verified_at),official=it.display_mode==='redirect',facts=[fact('pin',it.location),fact('calendar',daysLeft(it.deadline)),fact('link',it.fee||it.employment_type)].join('');return `<article class="feed-card ${isOpp?'opportunity':''} ${official?'official':''}" style="animation-delay:${Math.min(i,12)*18}ms"><div class="card-inner"><div class="author-row"><div class="source-avatar" style="background:${avatarColor(name)}">${esc(initials(name))}</div><div class="author-copy"><div class="author-name">${esc(name)}${official?'<span class="verified">✓</span>':''}</div><div class="author-meta">${esc(role)}${when?' · '+esc(when):''}</div></div><button class="menu-button" type="button" data-info="${esc(it.id)}" aria-label="About this post">${icons.more}</button></div><div class="post-label ${tag.cls}">${tag.label}</div><h2 class="post-title">${esc(it.title)}</h2>${it.description?`<p class="post-description">${esc(it.description)}</p>`:''}${facts?`<div class="fact-row">${facts}</div>`:''}${trustHTML(it)}${isOpp&&link?`<div class="cta-frame"><a class="primary-cta" href="${esc(link)}" target="_blank" rel="noopener">${esc(ctaLabel(it))}</a></div>`:needsDetails?`<div class="cta-frame"><span class="primary-cta muted">${esc(ctaLabel(it))}</span></div>`:''}</div><div class="card-actions">${link?`<a class="action-button source-action" href="${esc(link)}" target="_blank" rel="noopener" aria-label="Open source">${icons.link}<span>${isOpp?'Source':'Read'}</span></a>`:'<span class="action-button source-action"></span>'}<button class="action-button share-action" type="button" data-share="${esc(link)}" data-title="${esc(it.title)}" aria-label="Share post">${icons.share}</button><button class="action-button" type="button" data-info="${esc(it.id)}" aria-label="About this post">${icons.more}</button></div></article>`}
+function buildTabs(categories){const byId=new Map(categories.map(c=>[c.id,c]));tabModel=[{id:'all',label:'Latest'}].concat(categoryOrder.map(id=>byId.get(id)).filter(c=>c&&c.count>0).map(c=>({id:c.id,label:categoryLabels[c.id]||c.label})))}
+function renderTabs(){$('#rail').innerHTML=tabModel.map(t=>`<button type="button" class="filter-chip ${t.id===active?'active':''}" data-category="${t.id}">${esc(t.label)}</button>`).join('');$('#rail').querySelectorAll('[data-category]').forEach(btn=>btn.onclick=()=>selectCategory(btn.dataset.category))}
+function navForCategory(id){return['casting','festivals','grants'].includes(id)?id:'browse'}
+function selectCategory(id){active=id;query='';$('#search').value='';renderTabs();setNav(navForCategory(id));loadFeed(true);$('#feed').scrollTop=0}
+async function loadFeed(reset){if(loading)return;loading=true;if(reset){offset=0;items=[];$('#feed').innerHTML='<div class="skeleton"></div>'.repeat(4)}try{const d=await api(`/api/feed?category=${encodeURIComponent(active)}&limit=${PAGE}&offset=${offset}`);total=d.total;items=reset?d.items:items.concat(d.items);renderFeed()}catch(e){$('#feed').innerHTML=`<section class="error-card"><h2>Feed is unavailable</h2><p>${esc(e.message)}. Check that the TRIBLI backend is running, then try again.</p></section>`}loading=false}
+function renderFeed(){const q=query.trim().toLowerCase(),visible=q?items.filter(it=>[it.title,it.description,it.source,it.publisher,it.org,it.location].some(v=>String(v||'').toLowerCase().includes(q))):items;if(!visible.length){$('#feed').innerHTML=`<section class="empty"><h2>${q?'No matching posts':'Nothing here yet'}</h2><p>${q?'Try another title, source, role or location.':'This feed will update when a matching live item arrives.'}</p></section>`;return}$('#feed').innerHTML=visible.map(cardHTML).join('')+(!q&&items.length<total?`<button class="load-more" id="more" type="button">Load ${Math.min(PAGE,total-items.length)} more</button>`:!q?`<div class="end-note">You're all caught up · ${total} live posts</div>`:'');const more=$('#more');if(more)more.onclick=()=>{offset=items.length;loadFeed(false)};bindCardActions()}
+function bindCardActions(){document.querySelectorAll('[data-share]').forEach(btn=>btn.onclick=async()=>{const data={title:btn.dataset.title,text:btn.dataset.title,url:btn.dataset.share};try{if(navigator.share)await navigator.share(data);else{await navigator.clipboard.writeText([data.title,data.url].filter(Boolean).join('\n'));showToast('Link copied')}}catch(e){if(e.name!=='AbortError')showToast('Could not share this post')}});document.querySelectorAll('[data-info]').forEach(btn=>btn.onclick=()=>openPostInfo(btn.dataset.info))}
+function setNav(which){document.querySelectorAll('.nav-button').forEach(b=>b.classList.toggle('active',b.dataset.nav===which))}let toastTimer;function showToast(message){const t=$('#toast');t.textContent=message;t.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),2400)}
+function openSheet(markup){$('#sheetbody').innerHTML=markup;$('#scrim').classList.add('open');$('#scrim').setAttribute('aria-hidden','false')}
+function updateLiveSummary(totalItems){if(!srcData)return;const t=srcData.totals||{},live=t.feeding||0;$('#liveTitle').textContent=live+' live sources';$('#liveMeta').textContent=(totalItems||0).toLocaleString()+' feed posts'}
+function openStatus(){if(!srcData)return showToast('Source status is still loading');const t=srcData.totals,rows=srcData.ingesting||[];openSheet(`<h2 id="sheetTitle">Source status</h2><div class="sheet-sub">${t.feeding||0} active sources · ${t.blocked||0} blocked externally</div><div class="source-kpis"><div class="source-kpi"><strong>${t.mapped}</strong><span>Tracked</span></div><div class="source-kpi"><strong>${t.feeding}</strong><span>Live</span></div><div class="source-kpi"><strong>${t.blocked}</strong><span>Blocked</span></div></div>${rows.map(s=>{const feeding=s.feeding||s.status==='ok',color=feeding?'#1F9F70':s.status==='blocked'||s.status==='error'?'#C62828':'#999';const label=categoryLabels[s.category]||s.category;return`<div class="source-row"><span class="status-dot" style="background:${color}"></span><div class="source-row-copy"><strong>${esc(s.name)}</strong><span>${feeding?'Live':esc(s.status||'Pending')} · ${esc(label)}</span></div></div>`}).join('')}`)}
+function openPostInfo(id){const it=items.find(x=>String(x.id)===String(id));if(!it)return;const link=hrefFor(it),tag=labelFor(it),trust=it.apply_method==='team_review'?'Your teammate shared a relevant lead, but no direct contact was included. Ask them for the application details before applying.':it.acquisition_mode==='shared'?'Shared by your team — verify the external source before applying.':it.trust==='caution'?'This post has a caution flag. Review the source carefully before applying.':it.display_mode==='redirect'?'This is an official outbound call page.':'This is an external listing; TRIBLI has not independently verified it.';const rows=[['Feed',categoryLabels[it.category]||it.category||'Latest'],['Source',publisher(it)],['Type',tag.label],['Posted',ago(it.posted_at)||'Recently updated']].map(([k,v])=>`<div class="source-row"><div class="source-row-copy"><strong>${esc(k)}</strong><span>${esc(v)}</span></div></div>`).join('');openSheet(`<h2 id="sheetTitle">About this post</h2><div class="sheet-sub">How this item entered the TRIBLI feed</div>${rows}<div class="trust-note ${it.trust==='caution'?'caution':''}">${esc(trust)}</div>${link?`<div class="cta-frame"><a class="primary-cta" href="${esc(link)}" target="_blank" rel="noopener">Open original source</a></div>`:''}`)}
+function closeStatus(){$('#scrim').classList.remove('open');$('#scrim').setAttribute('aria-hidden','true')}
+async function boot(){try{const[c,h,s]=await Promise.all([api('/api/categories'),api('/api/health'),api('/api/sources')]);cats=c.categories;srcData=s;buildTabs(cats);updateLiveSummary(c.total_items);renderTabs();await loadFeed(true);if(!h.ok)showToast('Feed health needs attention')}catch(e){renderTabs();$('#feed').innerHTML='<section class="error-card"><h2>Cannot reach TRIBLI</h2><p>Start the backend and reload this page.</p></section>'}}
+$('#search').addEventListener('input',e=>{query=e.target.value;renderFeed()});$('#statusBtn').onclick=openStatus;$('#sheetClose').onclick=closeStatus;$('#scrim').onclick=e=>{if(e.target.id==='scrim')closeStatus()};document.querySelectorAll('[data-nav]').forEach(btn=>btn.onclick=()=>{const n=btn.dataset.nav;if(n==='share')location.href='/share';else if(n==='browse')selectCategory('all');else selectCategory(n)});
+boot();if('serviceWorker'in navigator)navigator.serviceWorker.register('/service-worker.js');
 </script>
 </body>
 </html>

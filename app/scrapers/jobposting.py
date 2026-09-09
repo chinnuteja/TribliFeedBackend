@@ -131,9 +131,14 @@ def _norm_date(s):
     if not s:
         return ""
     s = re.split(r"[T\s]", s)[0]                      # drop any time component
-    if re.match(r"^\d{2}-\d{2}-\d{4}$", s):           # DD-MM-YYYY
-        d, m, y = s.split("-")
-        return f"{y}-{m}-{d}"
+    m = re.match(r"^(\d{1,2})-(\d{1,2})-(\d{4})$", s)  # D-M-YYYY / DD-MM-YYYY
+    if m:
+        try:
+            return datetime.date(
+                int(m.group(3)), int(m.group(2)), int(m.group(1))
+            ).isoformat()
+        except ValueError:
+            return ""
     if re.match(r"^\d{4}-\d{2}-\d{2}$", s):           # already ISO
         return s
     return s[:10]

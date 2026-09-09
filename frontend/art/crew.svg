@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96" role="img" aria-label="Crew">
+  <rect width="96" height="96" rx="18" fill="#1C1917"/>
+  <rect x="8" y="8" width="80" height="80" rx="12" fill="#141210" stroke="#5B8AAE" stroke-width="2"/>
+  <rect x="28" y="30" width="40" height="28" rx="4" fill="#5B8AAE"/>
+  <rect x="40" y="58" width="16" height="10" fill="#3E5A72"/>
+</svg>

@@ -20,10 +20,23 @@ db.upsert_items([
          title="ALT EFF Film Fund 2026", description="Apply on the official page.",
          link="https://www.alteff.in/film-fund", trust="external",
          deadline="2026-12-10", verified_at="2026-08-31"),
+    dict(id="wa1", kind="opportunity", category="casting", source="Community share",
+         source_id="user_share", publisher="Gnapika Entertainments",
+         display_mode="full", acquisition_mode="shared", apply_method="whatsapp",
+         apply_url="https://wa.me/919876543210",
+         title="Casting call — extras Hyderabad", description="Walk-in extras",
+         link="https://wa.me/919876543210", location="Hyderabad",
+         region_tier="telugu", org="Gnapika Entertainments", trust="external"),
     dict(id="q1", kind="opportunity", category="casting", source="X",
          title="Bold shoot", link="https://x.example/q", trust="quarantine",
          display_mode="full"),
 ])
+
+# A cadence skip means a recent successful run exists. Preserve the visible
+# skip reason without dropping the source from healthy/feeding totals.
+db.finish_run(db.start_run("AIO Cine"), "ok", kept=1)
+db.finish_run(db.start_run("AIO Cine"), "skipped",
+              detail="refreshes every 180 min; last good run is newer")
 
 c = TestClient(app)
 feed = c.get("/api/feed?category=casting").json()
@@ -34,6 +47,10 @@ full = next(i for i in feed["items"] if i["id"] == "full1")
 assert full["display_mode"] == "full"
 assert full["source_id"] == "aiocine"
 assert "raw" not in full
+wa = next(i for i in feed["items"] if i["id"] == "wa1")
+assert wa["apply_method"] == "whatsapp"
+assert wa["acquisition_mode"] == "shared"
+assert "extract_evidence" not in wa
 
 grants = c.get("/api/feed?category=grants").json()
 redir = next(i for i in grants["items"] if i["id"] == "redir1")
@@ -48,5 +65,10 @@ assert any(s["kind"] == "rss_opportunity" for s in src["ingesting"])
 assert any(s.get("acquisition") == "rejected" for s in src["not_ingesting"])
 live = next(s for s in src["ingesting"] if s["kind"] == "official_call")
 assert live["acquisition"] == "redirect"
+aio = next(s for s in src["ingesting"] if s["name"] == "AIO Cine")
+assert aio["status"] == "skipped"
+assert aio["feeding"] is True
+assert src["totals"]["feeding"] >= 1
+assert c.get("/api/health").json()["healthy"] >= 1
 
 print("api cards OK")

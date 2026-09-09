@@ -50,6 +50,9 @@ assert andhra["region_tier"] == "telugu", andhra["region_tier"]
 assert opportunity_relevant("Roto artists required at Hanu Studios", "Hyderabad")
 assert not opportunity_relevant(
     "SmartRoto in Nuke: What it is, why it matters", "tutorial")
+assert not opportunity_relevant(
+    "VFX Supervisor Masterclass by ActionVFX Academy",
+    "Learn pre-production, on-set management, and post-production")
 trust, _, _ = assess_trust("Extras", "Pay Rs 5000 registration fee to apply", "")
 assert trust == "blocked"
 assert region_tier("Hyderabad walk-in") == "telugu"

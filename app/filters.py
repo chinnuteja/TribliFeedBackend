@@ -149,6 +149,64 @@ def assess_trust(title, description, org="", source_credibility=3):
     return ("caution" if risk >= 2 else "external"), reasons, float(score)
 
 
+_LABELLED_APPLY = re.compile(
+    r"(?:apply|contact|send (?:photo|profile|cv)|whatsapp)\s*(?:on|at|:)|"
+    r"wa\.me/|to apply.{0,40}whatsapp|email application",
+    re.I)
+
+_PRESSURE = re.compile(
+    r"\bdm me\b|whatsapp me\b|call me on|personal number|"
+    r"message me privately", re.I)
+
+
+def assess_user_share(title, description, org="", apply_method=""):
+    """Trust for a shared submission.
+
+    Does not loosen assess_trust: fee and Aadhaar/PAN/bank/OTP still block,
+    intimate-risk still quarantines. A clearly labelled application WhatsApp
+    or phone number is not scored as off-platform pressure.
+    """
+    blob = f"{title} {description} {org}"
+    reasons, score = [], 0.0
+
+    if _FEE_DEMAND.search(blob):
+        reasons.append("Asks applicants for money — legitimate castings never charge to audition.")
+        return "blocked", reasons, -10.0
+
+    if _ID_PHISH.search(blob):
+        reasons.append("Requests identity or bank documents up front — a known phishing pattern.")
+        return "blocked", reasons, -10.0
+
+    labelled = apply_method in ("whatsapp", "phone", "email") or bool(
+        _LABELLED_APPLY.search(blob))
+    risk = 0
+    if _INTIMATE.search(blob):
+        reasons.append("Mentions intimate or 'bold' content — needs human review before surfacing.")
+        risk += 2
+    if _PRESSURE.search(blob) and not labelled:
+        reasons.append("Pushes contact off-platform to a personal number.")
+        risk += 1
+    elif _OFFPLATFORM.search(blob) and not labelled:
+        reasons.append("Pushes contact off-platform to a personal number.")
+        risk += 1
+    if _FREE_EMAIL.search(blob) and apply_method != "email":
+        reasons.append("Contact is a free email address rather than a company domain.")
+        risk += 1
+    if _URGENCY.search(blob):
+        reasons.append("Uses urgency pressure.")
+        risk += 1
+    if not (org or "").strip():
+        reasons.append("No named hiring organisation.")
+        risk += 1
+
+    if risk >= 2 and _INTIMATE.search(blob):
+        return "quarantine", reasons, -3.0
+    if risk >= 3:
+        return "quarantine", reasons, -2.0
+    score = 1 - risk
+    return ("caution" if risk >= 2 else "external"), reasons, float(score)
+
+
 # ---------------------------------------------------------------- quality gates
 # A redirect card is only honest if `link` is the call itself — not a directory,
 # homepage, login wall, or SEO index. Public robots access is not enough.
@@ -167,7 +225,7 @@ _OPP_HIT = re.compile(
 
 _OPP_NEWS = re.compile(
     r"what it is, why it matters|why it matters|learn how|"
-    r"\btutorial\b|\bguide to\b|how it changes", re.I)
+    r"\btutorial\b|\bmasterclass\b|\bwebinar\b|\bguide to\b|how it changes", re.I)
 
 _CFE_HIT = re.compile(
     r"call for entr(?:y|ies)|entries invited|accepting (?:feature )?films|"
@@ -212,6 +270,136 @@ def is_permalink(url):
     if parts[-1] in _INDEX_SLUGS:
         return False
     return True
+
+
+_HTTP_URL = re.compile(r"https?://[^\s<>\"')\]]+", re.I)
+_WA_LINK = re.compile(
+    r"(?:https?://)?(?:wa\.me/|api\.whatsapp\.com/send\?phone=)(\+?\d{10,15})",
+    re.I)
+_MAIL = re.compile(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}")
+_IN_PHONE = re.compile(r"(?:\+91[\s-]*)?[6-9](?:[\s-]?\d){9}")
+
+
+def normalize_phone(raw):
+    """E.164 for Indian mobiles, or empty if not confident."""
+    digits = re.sub(r"\D", "", raw or "")
+    if digits.startswith("00"):
+        digits = digits[2:]
+    if digits.startswith("0") and len(digits) == 11:
+        digits = "91" + digits[1:]
+    if len(digits) == 10:
+        digits = "91" + digits
+    if digits.startswith("91") and len(digits) == 12:
+        return "+" + digits
+    if 11 <= len(digits) <= 15:
+        return "+" + digits
+    return ""
+
+
+def whatsapp_url_kind(url):
+    """post | channel | apply | other | '' — never fetch these hosts."""
+    from urllib.parse import urlparse
+    if not url or not isinstance(url, str):
+        return ""
+    parsed = urlparse(url.strip())
+    host = (parsed.netloc or "").lower()
+    if host.startswith("www."):
+        host = host[4:]
+    path = parsed.path or ""
+    if host in ("wa.me", "api.whatsapp.com"):
+        return "apply"
+    if host == "whatsapp.com":
+        parts = [p for p in path.split("/") if p]
+        if len(parts) >= 4 and parts[0] == "channel" and parts[2] == "post":
+            return "post"
+        if parts and parts[0] == "channel":
+            return "channel"
+        return "other"
+    return ""
+
+
+def is_apply_link(url):
+    """True for a concrete apply target: wa.me, mailto, tel, or a permalink."""
+    if not url or not isinstance(url, str):
+        return False
+    u = url.strip()
+    if u.lower().startswith("javascript:") or u.lower().startswith("data:"):
+        return False
+    if u.startswith("mailto:") and _MAIL.search(u):
+        return True
+    if u.startswith("tel:"):
+        return bool(normalize_phone(u))
+    kind = whatsapp_url_kind(u)
+    if kind == "apply":
+        return True
+    if kind in ("channel", "post", "other"):
+        return False
+    return is_permalink(u)
+
+
+def extract_http_urls(text):
+    out = []
+    for m in _HTTP_URL.findall(text or ""):
+        out.append(m.rstrip(".,);[]"))
+    return out
+
+
+def extract_apply_targets(text):
+    """Deterministic apply method/url from caption text. Never invents."""
+    blob = text or ""
+    m = _WA_LINK.search(blob)
+    if m:
+        phone = normalize_phone(m.group(1))
+        if phone:
+            return {"method": "whatsapp", "url": "https://wa.me/" + phone[1:],
+                    "target": phone}
+    mail = _MAIL.search(blob)
+    labelled = bool(_LABELLED_APPLY.search(blob))
+    if mail and (labelled or "email" in blob.lower() or "mailto" in blob.lower()):
+        addr = mail.group(0).rstrip(".")
+        return {"method": "email", "url": "mailto:" + addr, "target": addr}
+    if labelled:
+        ph = _IN_PHONE.search(blob)
+        if ph:
+            phone = normalize_phone(ph.group(0))
+            if phone:
+                return {"method": "whatsapp", "url": "https://wa.me/" + phone[1:],
+                        "target": phone}
+    for url in extract_http_urls(blob):
+        kind = whatsapp_url_kind(url)
+        if kind == "apply":
+            return extract_apply_targets(url)
+        if kind:
+            continue
+        if is_permalink(url) and url.lower().startswith("https://"):
+            return {"method": "web", "url": url, "target": url}
+    if mail:
+        addr = mail.group(0).rstrip(".")
+        return {"method": "email", "url": "mailto:" + addr, "target": addr}
+    return {"method": "", "url": "", "target": ""}
+
+
+_SHARE_HIT = re.compile(
+    r"casting call|crew call|audition|walk[- ]?in|"
+    r"\bextras?\b|\bartists?\b|\bactors?\b|\bactresses?\b|"
+    r"(?:male|female)\s+(?:artists?|actors?|extras?)|"
+    r"required(?:\s+(?:male|female))|"
+    r"shooting (?:call|from)|looking for|"
+    r"hir(?:e|ing)|job opening|vacanc(?:y|ies)|compositor|cinematographer",
+    re.I)
+
+
+def share_relevant(title, description=""):
+    """True when a shared payload is a casting/crew call, not a chat scrap."""
+    t = (title or "").strip()
+    if len(t) < 8:
+        return False
+    if not editorial_ok(title, description):
+        return False
+    blob = f"{t} {description or ''}"
+    if _OPP_NEWS.search(blob):
+        return False
+    return bool(_OPP_HIT.search(blob) or _SHARE_HIT.search(blob))
 
 
 def opportunity_relevant(title, description=""):
@@ -299,6 +487,11 @@ def build_item(source, *, kind, title, link, display_mode="full", **extra):
            or source.get("name") or "")
     src_url = (extra.pop("source_url", None) or source.get("url")
                or source.get("sitemap") or link)
+    if "verified_at" in extra:
+        verified_at = extra.pop("verified_at") or ""
+    else:
+        verified_at = (
+            _dt.date.today().isoformat() if display_mode == "redirect" else "")
     return dict(
         id=extra.pop("id", None) or fingerprint(source["id"], title, link),
         kind=kind,
@@ -308,8 +501,7 @@ def build_item(source, *, kind, title, link, display_mode="full", **extra):
         publisher=pub,
         source_url=src_url,
         display_mode=display_mode,
-        verified_at=extra.pop("verified_at", "") or (
-            _dt.date.today().isoformat() if display_mode == "redirect" else ""),
+        verified_at=verified_at,
         title=title,
         link=link,
         trust=extra.pop("trust", "external"),

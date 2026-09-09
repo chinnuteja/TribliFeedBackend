@@ -241,7 +241,8 @@ NOT_INGESTING = [
          acquisition="watch",
          reason="AI-match app. No public board."),
     dict(name="Modelz World", category="telugu", status="nofeed",
-         reason="Intake is WhatsApp-only by design — no web endpoint exists."),
+         reason="Intake is WhatsApp-only by design — no web endpoint exists. "
+                "Cover those posts via the share-to-TRIBLI path, not a scraper."),
     dict(name="Gnapika Entertainments", category="telugu", status="nofeed",
          reason="Real auditions page but no feed. Needs page-diff monitoring."),
     dict(name="Instagram casting accounts", category="telugu", status="nofeed",
