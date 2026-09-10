@@ -1,6 +1,7 @@
 """Configuration. Secrets come from the environment, never from source."""
 import os
 from pathlib import Path
+from urllib.parse import quote
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -35,8 +36,15 @@ DATA_DIR.mkdir(exist_ok=True)
 DB_PATH = os.getenv("TRIBLI_DB", str(DATA_DIR / "tribli.db"))
 # Production database. Leave empty for the zero-dependency local SQLite setup.
 # This must be a server-only Postgres connection string; never expose it to the
-# PWA or commit it to .env.example.
+# PWA or commit it to .env.example. A deployment may keep the password in a
+# separate secret and leave [YOUR-PASSWORD] in the URI; this prevents the full
+# credential from being copied into build configuration or source.
 DATABASE_URL = os.getenv("TRIBLI_DATABASE_URL", "").strip()
+_DATABASE_PASSWORD = os.getenv("TRIBLI_DATABASE_PASSWORD", "")
+if DATABASE_URL and _DATABASE_PASSWORD and "[YOUR-PASSWORD]" in DATABASE_URL:
+    DATABASE_URL = DATABASE_URL.replace(
+        "[YOUR-PASSWORD]", quote(_DATABASE_PASSWORD, safe="")
+    )
 
 # Festival API key — set via environment, e.g. export FESTIVAL_API_KEY=fes_...
 FESTIVAL_API_KEY = os.getenv("FESTIVAL_API_KEY", "").strip()
