@@ -183,6 +183,17 @@ def _result_html(headline: str, reasons: list, setup: bool = False, item_id: str
     why = "".join(f"<li>{_esc(r)}</li>" for r in reasons) or "<li>No extra detail.</li>"
     setup_line = ('<p class="status bad"><a href="/share/setup">Connect this device</a> once, then sharing is two taps.</p>'
                   if setup else "")
+    published = headline.lower().startswith("published")
+    saved = headline.lower().startswith("saved")
+    mark_bg = "#E7F7F0" if published else "#FFF1D6" if saved else "#F7DFDF"
+    mark_color = "#156A4B" if published else "#8A5A00" if saved else "#941E1E"
+    intro = (
+        "Your post is now available to the TRIBLI team."
+        if published else
+        "This post is in the team feed and needs contact details before anyone applies."
+        if saved else
+        "TRIBLI kept this out of the feed."
+    )
     return f"""<!DOCTYPE html><html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#FFFFFF"><link rel="manifest" href="/manifest.webmanifest">
@@ -190,10 +201,10 @@ def _result_html(headline: str, reasons: list, setup: bool = False, item_id: str
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Open+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/static/share.css">
-<style>.result-mark{{width:52px;height:52px;border-radius:50%;display:grid;place-items:center;margin-bottom:18px;background:{'#E7F7F0' if headline.lower().startswith('published') else '#F7DFDF'};color:{'#156A4B' if headline.lower().startswith('published') else '#941E1E'};font-size:24px;font-weight:750}}.result-list{{margin:0;padding-left:19px;color:#666;font:13px/1.55 'Open Sans',sans-serif}}.result-list li+li{{margin-top:6px}}.item-id{{color:#999;font:11px/1.4 ui-monospace,monospace;overflow-wrap:anywhere;margin-top:14px}}</style>
+<style>.result-mark{{width:52px;height:52px;border-radius:50%;display:grid;place-items:center;margin-bottom:18px;background:{mark_bg};color:{mark_color};font-size:24px;font-weight:750}}.result-list{{margin:0;padding-left:19px;color:#666;font:13px/1.55 'Open Sans',sans-serif}}.result-list li+li{{margin-top:6px}}.item-id{{color:#999;font:11px/1.4 ui-monospace,monospace;overflow-wrap:anywhere;margin-top:14px}}</style>
 </head><body><div class="share-shell"><header class="share-header"><a class="icon-button" href="/" aria-label="Back to feed"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m15 18-6-6 6-6" stroke-linecap="round" stroke-linejoin="round"/></svg></a><a class="brand" href="/" aria-label="TRIBLI home"><span class="brand-glyph"></span><span>TRIBLI</span></a><span></span></header><main class="share-main">
-<p class="eyebrow">Team intake</p><div class="panel"><div class="result-mark">{'✓' if headline.lower().startswith('published') else '!'}</div><h1>{_esc(headline)}</h1>
-<p class="intro">{'Your post is now available to the TRIBLI team.' if headline.lower().startswith('published') else 'TRIBLI kept this out of the feed.'}</p>
+<p class="eyebrow">Team intake</p><div class="panel"><div class="result-mark">{'✓' if published or saved else '!'}</div><h1>{_esc(headline)}</h1>
+<p class="intro">{intro}</p>
 <ul class="result-list">{why}</ul>{setup_line}<p class="item-id">{_esc(item_id)}</p>
 </div><div class="cta-frame"><button class="primary-button" type="button" onclick="location.href='/'">Open team feed</button></div>
 <nav class="link-row" aria-label="Share result"><a href="/share">Share another</a><span>·</span><a href="/share/setup">Device setup</a></nav>
@@ -222,8 +233,12 @@ async def _handle_share(request: Request, html: bool):
         user_agent=request.headers.get("user-agent", ""),
     )
     if html:
-        ok = result["status"] in ("published", "duplicate")
-        head = "Published" if ok else "Not published"
+        if result["status"] in ("published", "duplicate"):
+            head = "Published"
+        elif result["status"] == "needs_details":
+            head = "Saved for team review"
+        else:
+            head = "Not published"
         return HTMLResponse(_result_html(head, result.get("reasons") or [],
                                          item_id=result.get("id") or ""))
     return JSONResponse(result)

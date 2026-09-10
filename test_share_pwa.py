@@ -86,6 +86,16 @@ assert html.status_code == 200, html.text[:400]
 assert "published" in html.text.lower() or "not published" in html.text.lower()
 assert "<script>alert" not in html.text
 
+# A real WhatsApp Channel message permalink may arrive without its caption.
+# The result page must tell the teammate it was saved, not rejected.
+link_only = c.post("/share", data={
+    "url": "https://www.whatsapp.com/channel/0029VaExampleChannel/818",
+}, headers={"Authorization": f"Bearer {token}"})
+assert link_only.status_code == 200, link_only.text[:400]
+assert "saved for team review" in link_only.text.lower()
+assert "not published" not in link_only.text.lower()
+assert "needs contact details" in link_only.text.lower()
+
 # unauthenticated PWA share points at setup, does not auto-publish
 need = c.post("/share", data={"text": "Casting call — extras Hyderabad\nApply on WhatsApp: 9000000000"})
 assert need.status_code in (200, 401, 403)
