@@ -26,7 +26,7 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"],
 FRONTEND = Path(__file__).resolve().parent.parent / "frontend"
 
 # Categories that are views over other categories rather than their own sources
-VIRTUAL = {"telugu"}
+VIRTUAL = {"telugu", "team"}
 
 
 @app.on_event("startup")
@@ -69,6 +69,8 @@ def categories():
     out_map = {c["id"]: c for c in out}
     if "telugu" in out_map:
         out_map["telugu"]["count"] = counts.get("_telugu", 0)
+    if "team" in out_map:
+        out_map["team"]["count"] = counts.get("_team", 0)
     return {"categories": out, "total_items": sum(counts.get(c["id"], 0)
                                                   for c in CATEGORIES)}
 

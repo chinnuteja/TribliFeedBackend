@@ -537,7 +537,9 @@ def query_items(category="all", limit=30, offset=0, tier=None,
         where.append("trust != 'quarantine'")
     where.append("(expires_at IS NULL OR expires_at='' OR expires_at >= date('now'))")
 
-    if category == "telugu":
+    if category == "team":
+        where.append("acquisition_mode='shared'")
+    elif category == "telugu":
         where.append("kind='opportunity' AND region_tier IN ('telugu','south')")
     elif category and category != "all":
         where.append("category=?")
@@ -578,7 +580,13 @@ def category_counts():
             "AND (expires_at IS NULL OR expires_at='' OR expires_at >= date('now')) "
             "AND kind='opportunity' AND region_tier IN ('telugu','south')"
         ).fetchone()["n"]
+        team = c.execute(
+            "SELECT COUNT(*) n FROM items WHERE active=1 AND trust != 'quarantine' "
+            "AND (expires_at IS NULL OR expires_at='' OR expires_at >= date('now')) "
+            "AND acquisition_mode='shared'"
+        ).fetchone()["n"]
     out["_telugu"] = t
+    out["_team"] = team
     return out
 
 

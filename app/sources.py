@@ -372,6 +372,7 @@ NOT_INGESTING = [
 ]
 
 CATEGORIES = [
+    dict(id="team",       label="From Team",       icon="T"),
     dict(id="casting",    label="Opportunities",   icon="●"),
     dict(id="telugu",     label="Telugu & South",  icon="◈"),
     dict(id="festivals",  label="Festivals",       icon="◐"),

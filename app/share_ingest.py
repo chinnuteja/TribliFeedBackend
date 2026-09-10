@@ -296,7 +296,7 @@ def process_share(text: str = "", url: str = "", image_bytes: bytes | None = Non
                 is_permalink(source_url) or whatsapp_url_kind(source_url) == "post"
             ) else ""
             item = build_item(
-                {**SHARED_SOURCE, "publisher": extracted.source_publisher or org or "Team share",
+                {**SHARED_SOURCE, "publisher": "TRIBLI Team",
                  "url": source_link},
                 kind="opportunity",
                 title=opp_title,
@@ -343,7 +343,7 @@ def process_share(text: str = "", url: str = "", image_bytes: bytes | None = Non
             # operational expiry only — do not present as publisher deadline
             pass
 
-        publisher = extracted.source_publisher or org or _source_domain(link) or "External source"
+        publisher = "TRIBLI Team"
         domain = _source_domain(source_url or (apply_url if apply_method == "web" else ""))
         item = build_item(
             {**SHARED_SOURCE, "publisher": publisher,

@@ -48,6 +48,45 @@ _LABEL = re.compile(
     r"deadline|last date|apply)\s*[:\-]\s*(.+)$"
 )
 
+_GENERIC_SHARE_TITLE = re.compile(
+    r"^(?:photo|image|video|post|link)\s+from\s+[^\n:—–-]{1,60}$", re.I)
+_GENERIC_SHARE_PREFIX = re.compile(
+    r"^(?:photo|image|video|post|link)\s+from\s+"
+    r"[^🎬📍🎭📱📩📧🔗✅\n:—–-]{1,60}\s*", re.I)
+_CALL_TITLE = re.compile(
+    r"(?:🎬\s*)?(casting call|crew call|audition|hiring)\s*[:—–-]\s*"
+    r"(.+?)(?=\s*(?:📍|🎭|📱|📩|📧|🔗|✅|location\s*:|"
+    r"looking for\s*:|how to apply\s*:|deadline\s*:|$))",
+    re.I,
+)
+
+
+def _caption_title(line: str) -> str:
+    """Prefer the call heading over generic OS share titles."""
+    candidate = clean_text(line, 420)
+    if not candidate or _GENERIC_SHARE_TITLE.fullmatch(candidate):
+        return ""
+    candidate = _GENERIC_SHARE_PREFIX.sub("", candidate).strip()
+    match = _CALL_TITLE.search(candidate)
+    if match:
+        kind = match.group(1).title()
+        subject = clean_text(match.group(2), 130)
+        return clean_text(f"{kind} — {subject}", 180)
+    return clean_text(candidate, 180) if len(candidate) >= 8 else ""
+
+
+def _inline_field(raw: str, *labels: str) -> str:
+    """Read emoji-separated mobile captions without consuming the next field."""
+    names = "|".join(re.escape(label) for label in labels)
+    boundary = (
+        r"(?=\s*(?:🎬|📍|🎭|📱|📩|📧|🔗|✅|📅|💰|"
+        r"production\s*:|studio\s*:|company\s*:|location\s*:|"
+        r"place\s*:|venue\s*:|language\s*:|role\s*:|looking for\s*:|"
+        r"required\s*:|how to apply\s*:|apply\s*:|deadline\s*:|last date\s*:|$))"
+    )
+    match = re.search(rf"(?:{names})\s*[:—–-]\s*(.+?){boundary}", raw, re.I)
+    return clean_text(match.group(1), 120) if match else ""
+
 
 def deterministic_extract(text: str) -> ExtractedOpportunity:
     """Labelled-line parse. Empty fields stay empty — never guessed."""
@@ -57,18 +96,22 @@ def deterministic_extract(text: str) -> ExtractedOpportunity:
     for ln in lines:
         if whatsapp_url_kind(ln) or ln.lower().startswith("http"):
             continue
-        if len(clean_text(ln, 180)) >= 8:
-            title = clean_text(ln, 180)
+        title = _caption_title(ln)
+        if title:
             break
     fields = {}
     for m in _LABEL.finditer(raw):
         fields[m.group(1).lower()] = clean_text(m.group(2), 120)
     org = (fields.get("production") or fields.get("studio") or fields.get("company")
            or fields.get("org") or fields.get("organisation")
-           or fields.get("organization") or "")
-    location = fields.get("location") or fields.get("place") or fields.get("venue") or ""
-    language = fields.get("language") or ""
-    role = fields.get("role") or fields.get("looking for") or fields.get("required") or ""
+           or fields.get("organization")
+           or _inline_field(raw, "production", "studio", "company", "org",
+                            "organisation", "organization") or "")
+    location = (fields.get("location") or fields.get("place") or fields.get("venue")
+                or _inline_field(raw, "location", "place", "venue") or "")
+    language = fields.get("language") or _inline_field(raw, "language") or ""
+    role = (fields.get("role") or fields.get("looking for") or fields.get("required")
+            or _inline_field(raw, "role", "looking for", "required") or "")
     apply = extract_apply_targets(raw)
     urls = extract_http_urls(raw)
     source_url = ""

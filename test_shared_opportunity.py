@@ -170,6 +170,23 @@ assert miss_item["apply_method"] == "team_review"
 assert not miss_item["apply_url"]
 
 
+# iOS often supplies a generic "Photo from <name>" share title. The useful
+# call heading must win, and team attribution must never become an app-store
+# or unrelated outbound domain.
+ios = process_share(
+    title="Photo from Teja",
+    text=("Photo from Teja 🎬 Casting Call: From Producers of Youth "
+          "📍 Location: Other 🎭 Looking for: Male and female child artists"),
+    transport="pwa",
+)
+assert ios["status"] == "needs_details", ios
+ios_item = next(i for i in items() if i["id"] == ios["id"])
+assert ios_item["title"] == "Casting Call — From Producers of Youth", ios_item
+assert ios_item["publisher"] == "TRIBLI Team", ios_item
+assert ios_item["location"] == "Other", ios_item
+assert "child artists" in ios_item["employment_type"].lower(), ios_item
+
+
 # expired stated deadline
 exp = process_share(text=fx("whatsapp_expired.txt"))
 assert exp["status"] == "rejected", exp
@@ -324,6 +341,15 @@ assert shared["apply_method"] == "whatsapp"
 assert "extract_evidence" not in shared
 assert "submitted_by" not in shared
 assert "raw" not in shared
+
+team_feed = c.get("/api/feed?category=team").json()
+team_ids = [i["id"] for i in team_feed["items"]]
+assert ios["id"] in team_ids
+assert all(i.get("acquisition_mode") == "shared" for i in team_feed["items"])
+categories = c.get("/api/categories").json()["categories"]
+team_category = next(cat for cat in categories if cat["id"] == "team")
+assert team_category["virtual"] is True
+assert team_category["count"] == team_feed["total"]
 
 h = c.get("/api/health").json()
 assert "share" in h

@@ -112,8 +112,12 @@ assert "Apply via WhatsApp" in src
 assert "Call coordinator" in src
 assert "Email application" in src
 assert "View external post" in src
-assert "Shared from WhatsApp" in src
-assert "TEAM SHARE" in src
+assert "From your team" in src
+assert "TRIBLI Team" in src
+assert "From Team" in src
+assert "TEAM SHARE" not in src
+assert "descriptionHTML" in src
+assert "team-card" in src
 assert "competitor" not in src.lower() or "not a competitor" in src.lower()
 assert "apply_method" in src
 
