@@ -33,6 +33,7 @@ SOURCES = [
          note="449 listings. Some adult-content posts need filtering."),
     dict(id="dazzlerr", name="Dazzlerr", kind="jobposting", category="casting",
          sitemap="https://www.dazzlerr.com/jobs-sitemap.xml",
+         sitemap_browser_ua=True,
          limit=60, credibility=3, max_age_days=60,
          note="12,099 job URLs using JobPosting microdata rather than JSON-LD."),
     dict(id="avjobs", name="Animation and VFX Jobs", kind="rss_opportunity",

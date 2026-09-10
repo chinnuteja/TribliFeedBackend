@@ -29,6 +29,11 @@ def _load_env(path=None):
 
 
 _load_env()
+# Render Secret Files are mounted outside the repository. Supporting its
+# conventional `.env` location keeps secrets out of Git while preserving the
+# exact same KEY=value format used for local development. Real environment
+# variables still win because `_load_env` uses `setdefault`.
+_load_env(Path(os.getenv("TRIBLI_ENV_FILE", "/etc/secrets/.env")))
 
 DATA_DIR = BASE_DIR / "data"
 DATA_DIR.mkdir(exist_ok=True)

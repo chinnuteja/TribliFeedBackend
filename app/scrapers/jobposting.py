@@ -240,7 +240,10 @@ def _fetch_one(args):
 
 def scrape(source):
     sm = _sitemap_url(source)
-    urls = _sitemap_urls(get(sm), source.get("max_age_days"))
+    urls = _sitemap_urls(
+        get(sm, browser_ua=bool(source.get("sitemap_browser_ua"))),
+        source.get("max_age_days"),
+    )
     limit = min(source.get("limit", DETAIL_LIMIT), DETAIL_LIMIT)
 
     # Advance into listings we've never parsed. Castkro publishes 456 URLs and

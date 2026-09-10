@@ -49,3 +49,28 @@ assert _norm_date("9-7-2026") == "2026-07-09"
 assert _norm_date("2026-09-08") == "2026-09-08"
 assert _norm_date("31-02-2026") == ""
 print("deadline normalisation OK")
+
+# Dazzlerr's public sitemap rejects the identified crawler UA from Render even
+# though robots allow it. Confirm its explicit browser-UA source flag reaches
+# the first sitemap request; listing pages already use this UA.
+from app.scrapers import jobposting as _jp
+from app.sources import SOURCES
+
+_dazzlerr = next(s for s in SOURCES if s["id"] == "dazzlerr")
+assert _dazzlerr.get("sitemap_browser_ua") is True
+_calls = []
+_old_get, _old_unseen, _old_mark = _jp.get, _jp.db.unseen_urls, _jp.db.mark_urls_seen
+try:
+    def _fake_get(url, browser_ua=False, **kwargs):
+        _calls.append((url, browser_ua))
+        return "<urlset></urlset>"
+
+    _jp.get = _fake_get
+    _jp.db.unseen_urls = lambda source_id, urls, limit: []
+    _jp.db.mark_urls_seen = lambda source_id, urls: None
+    _jp.scrape(_dazzlerr)
+finally:
+    _jp.get, _jp.db.unseen_urls, _jp.db.mark_urls_seen = _old_get, _old_unseen, _old_mark
+
+assert _calls and _calls[0] == (_dazzlerr["sitemap"], True), _calls
+print("Dazzlerr sitemap UA OK")
