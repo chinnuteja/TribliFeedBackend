@@ -194,7 +194,11 @@ class _PostgresConnection:
         return self.raw.execute(_pg_sql(sql), params or ())
 
     def executemany(self, sql, params_seq):
-        return self.raw.executemany(_pg_sql(sql), params_seq)
+        # psycopg exposes executemany on cursors, not Connection. SQLite puts
+        # it on the connection, so keep that portability detail inside this
+        # adapter instead of leaking it into ingestion code.
+        with self.raw.cursor() as cursor:
+            return cursor.executemany(_pg_sql(sql), params_seq)
 
     def __getattr__(self, name):
         return getattr(self.raw, name)
