@@ -310,10 +310,14 @@ def whatsapp_url_kind(url):
         return "apply"
     if host == "whatsapp.com":
         parts = [p for p in path.split("/") if p]
-        if len(parts) >= 4 and parts[0] == "channel" and parts[2] == "post":
-            return "post"
-        if parts and parts[0] == "channel":
-            return "channel"
+        if parts and parts[0].lower() == "channel":
+            # WhatsApp Channel message permalinks use
+            # /channel/<channel-id>/<message-id>. Keep supporting the older
+            # /channel/<channel-id>/post/<message-id> shape as well.
+            if len(parts) >= 3:
+                return "post"
+            if len(parts) >= 2:
+                return "channel"
         return "other"
     return ""
 

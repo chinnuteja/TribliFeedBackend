@@ -72,6 +72,8 @@ assert not is_apply_link("https://www.reelon.com/alljobs")
 assert not is_apply_link("javascript:alert(1)")
 assert whatsapp_url_kind("https://whatsapp.com/channel/abc") == "channel"
 assert whatsapp_url_kind(
+    "https://www.whatsapp.com/channel/0029VaExampleChannel/818") == "post"
+assert whatsapp_url_kind(
     "https://whatsapp.com/channel/abc/post/123") == "post"
 assert whatsapp_url_kind("https://wa.me/919876543210") == "apply"
 
@@ -135,6 +137,19 @@ ch = process_share(text=fx("whatsapp_channel_invite.txt"),
                    url="https://whatsapp.com/channel/0029VaExampleChannel")
 assert ch["status"] == "rejected", ch
 assert any("channel" in x.lower() for x in ch["reasons"]), ch["reasons"]
+
+
+# Android may share a real Channel message permalink without its caption or
+# poster. Keep the human signal as Needs details; never invent an Apply route.
+link_only_url = "https://www.whatsapp.com/channel/0029VaExampleChannel/818"
+link_only = process_share(url=link_only_url, transport="web-share")
+assert link_only["status"] == "needs_details", link_only
+link_only_item = next(i for i in items() if i["id"] == link_only["id"])
+assert link_only_item["title"] == "Team-shared WhatsApp post"
+assert link_only_item["source_url"] == link_only_url
+assert link_only_item["link"] == link_only_url
+assert link_only_item["apply_method"] == "team_review"
+assert not link_only_item["apply_url"]
 
 
 # post-level WhatsApp URL + caption publishes; apply is WhatsApp

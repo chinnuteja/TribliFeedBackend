@@ -195,7 +195,20 @@ def process_share(text: str = "", url: str = "", image_bytes: bytes | None = Non
         if page_url and is_permalink(page_url):
             source_url = source_url or page_url
 
-        if not opp_title or not share_relevant(opp_title, description):
+        post_needs_details = bool(post_url) and (
+            not opp_title or not share_relevant(opp_title, description)
+        )
+        if post_needs_details:
+            # Android's WhatsApp share sheet can send only the Channel message
+            # permalink, without the visible caption/poster. The teammate's
+            # explicit share is still a useful lead, but the URL proves no
+            # casting facts and must never become an Apply action by itself.
+            opp_title = "Team-shared WhatsApp post"
+            apply_method, apply_url = "", ""
+            reasons.append(
+                "WhatsApp did not include enough post details; saved for team review."
+            )
+        elif not opp_title or not share_relevant(opp_title, description):
             return finish("rejected", ["not a specific casting or crew opportunity"])
 
         if extracted.title_confidence and extracted.title_confidence < 0.55:
